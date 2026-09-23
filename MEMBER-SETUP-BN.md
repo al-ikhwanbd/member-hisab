@@ -21,7 +21,7 @@
 2. Authentication-এ Phone provider/password বা প্রয়োজনীয় SMS provider চালু করুন।
 3. SQL Editor-এ `member-auth-schema.sql` চালান।
 4. V55-এর প্রয়োজনীয় data নতুন project-এ import করুন এবং `member_profiles.member_id`-এর সঙ্গে existing member IDs map করুন।
-5. একটি admin Auth user তৈরি করে তার UUID `admin_users` table-এ যোগ করুন।
+5. একটি admin Auth user তৈরি করে তার UUID `member_admins` table-এ যোগ করুন।
 6. `member-auth-config.js`-এ নতুন project URL ও publishable/anon key বসান।
 7. GitHub Pages-এ publish করুন।
 
