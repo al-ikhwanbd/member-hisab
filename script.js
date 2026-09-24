@@ -14,6 +14,8 @@ let MONTHLY_REQUIRED=DEFAULT_MONTHLY_REQUIRED;
 const MONTHS_PER_YEAR=12;
 const YEARLY_REQUIRED=()=>MONTHLY_REQUIRED*MONTHS_PER_YEAR;
 let dividendVisibility={};
+let accountingPublic=false;
+let accountingVisibilityReady=false;
 
 function detectMonthlyRequired(){
   const first=payments
@@ -117,7 +119,45 @@ function isDividendPublic(memberId){
   return !!dividendVisibility[String(memberId)];
 }
 function canViewDividend(memberId){
+  if(accessMode==='member' && !accountingPublic)return false;
   return !!adminUser || isDividendPublic(memberId);
+}
+async function loadAccountingVisibility(){
+  accountingVisibilityReady=false;
+  accountingPublic=false;
+  if(!sb)return false;
+  const {data,error}=await sb.from('accounting_visibility').select('id,is_public').eq('id',1).maybeSingle();
+  if(error){
+    console.warn('accounting_visibility load:',error.message);
+    return false;
+  }
+  accountingPublic=!!data?.is_public;
+  accountingVisibilityReady=true;
+  return accountingPublic;
+}
+function renderAccountingVisibility(){
+  const status=q('accountingVisibilityStatus');
+  const adminBox=q('adminAccountingVisibility');
+  if(status){
+    status.innerHTML=accountingPublic
+      ? '<span class="visibility-on">🟢 Public: লগইন করা সকল সদস্য ব্যক্তিগত হিসাব থেকে নোটিশ পর্যন্ত সব হিসাব দেখতে পারবেন।</span>'
+      : '<span class="visibility-off">🔴 Hidden: সদস্যরা শুধু নিজের ব্যক্তিগত হিসাব দেখতে পারবেন।</span>';
+  }
+  const pub=q('accountingPublicBtn'),hide=q('accountingHideBtn');
+  if(pub)pub.disabled=accountingPublic;
+  if(hide)hide.disabled=!accountingPublic;
+  if(adminBox){
+    adminBox.innerHTML=`<div class="visibility-summary ${accountingPublic?'is-public':'is-hidden'}"><strong>${accountingPublic?'🟢 হিসাব Public':'🔴 হিসাব Hidden'}</strong><p>${accountingPublic?'সকল অনুমোদিত সদস্য ব্যক্তিগত হিসাব, সকল সদস্যদের হিসাব, মোট হিসাব, লভ্যাংশ/খরচ, তহবিল ও নোটিশ দেখতে পারবেন।':'সদস্যরা শুধু নিজের ব্যক্তিগত হিসাব দেখতে পারবেন; অন্যান্য হিসাবের মেনু ও ডেটা বন্ধ থাকবে।'}</p><div class="visibility-actions"><button type="button" class="small-btn edit" onclick="setAccountingVisibility(true)" ${accountingPublic?'disabled':''}>Public করুন</button><button type="button" class="small-btn del" onclick="setAccountingVisibility(false)" ${accountingPublic?'':'disabled'}>Hide করুন</button></div></div>`;
+  }
+}
+async function setAccountingVisibility(isPublic){
+  if(!sb){showMessage('Supabase configuration পাওয়া যায়নি।',false);return false}
+  const {error}=await sb.from('accounting_visibility').upsert({id:1,is_public:!!isPublic,updated_at:new Date().toISOString()},{onConflict:'id'});
+  if(error){showMessage('হিসাবের Public/Hide অবস্থা সংরক্ষণ করা যায়নি। আগে accounting_visibility.sql Supabase-এ চালান।',false);return false}
+  accountingPublic=!!isPublic; accountingVisibilityReady=true;
+  renderAccountingVisibility(); route();
+  showMessage(accountingPublic?'সদস্যদের জন্য হিসাব Public করা হয়েছে ✓':'সদস্যদের জন্য হিসাব Hide করা হয়েছে ✓',true);
+  return true;
 }
 async function loadDividendVisibility(){
   dividendVisibility={};
@@ -155,6 +195,23 @@ function downloadButton(kind){return `<div class="result-download"><button class
 
 async function load(){
   if(accessMode==="none") return;
+  if(accessMode==="member" && window.__MEMBER_MAIN_DATA){
+    const d=window.__MEMBER_MAIN_DATA;
+    accountingPublic=!!window.__MEMBER_ACCOUNTING_PUBLIC;
+    accountingVisibilityReady=true;
+    members=d.members||[]; payments=d.payments||[]; profits=d.profits||[]; expenses=d.expenses||[]; assets=d.assets||[]; notices=d.notices||[];
+    detectMonthlyRequired();
+    await loadDividendVisibility();
+    fillYearSelectors();fillMemberSelectors();
+    renderPersonalTotal();
+    if(accountingPublic){
+      renderTotal();renderProfitExpenseDetails();renderFund();renderNotices();renderAllMembersPreview();
+    }else{
+      q('totalResult').innerHTML='';q('profitExpenseDetailsResult').innerHTML='';q('fundResult').innerHTML='';q('noticeResult').innerHTML='';q('allMembersResult').innerHTML='';
+    }
+    route();
+    return;
+  }
   if(!sb){q('totalResult').innerHTML='<div class="empty-state">Supabase configuration পাওয়া যায়নি।</div>';return;}
   q('totalResult').innerHTML='<div class="loading">ডাটা লোড হচ্ছে...</div>';
   // Supabase-এর একবারের select সাধারণত সর্বোচ্চ ১০০০টি row ফেরত দিতে পারে।
@@ -182,14 +239,29 @@ async function load(){
   const errors=[m,p,pr,e,a,n].filter(x=>x.error);
   if(errors.length){console.error(...errors.map(x=>x.error));q('totalResult').innerHTML='<div class="empty-state">ডাটা লোড করতে সমস্যা হয়েছে। Supabase/RLS সেটিংস পরীক্ষা করুন।</div>';return;}
   members=m.data||[];payments=p.data||[];profits=pr.data||[];expenses=e.data||[];assets=a.data||[];notices=n.data||[];
+  await loadAccountingVisibility();
   detectMonthlyRequired();
   await loadDividendVisibility();
   fillYearSelectors();fillMemberSelectors();
   renderTotal();renderPersonalTotal();renderProfitExpenseDetails();renderFund();renderNotices();renderAllMembersPreview();
-  await checkAdmin();
+  if(accessMode==="admin") await checkAdmin();
 }
 
 function renderPersonalTotal(){
+  if(accessMode==='member' && !accountingPublic){
+    const ownId=window.__MEMBER_MAIN_ID;
+    const own=members.find(m=>String(m.id)===String(ownId))||members[0];
+    if(!own){q('personalTotalResult').innerHTML='';return;}
+    const deposit=memberPaid(own,'all'),due=memberDue(own,'all'),dividend=memberDividend(own),visible=canViewDividend(own.id);
+    q('personalTotalResult').innerHTML=`<div class="report-title"><h3>আমার ব্যক্তিগত মোট হিসাব</h3><p>হিসাব Public না থাকায় শুধু আপনার নিজস্ব হিসাব দেখানো হচ্ছে</p></div>
+    <div class="summary-grid total-summary">
+      <article><span>মোট পরিশোধ</span><strong>${money(deposit)}</strong></article>
+      <article><span>মোট বাকি</span><strong>${money(due)}</strong></article>
+      <article><span>মোট লভ্যাংশ</span><strong>${visible?money(dividend):'গোপন'}</strong></article>
+      <article class="highlight"><span>সর্বমোট প্রাপ্য</span><strong>${money(deposit+(visible?dividend:0))}</strong></article>
+    </div>`;
+    return;
+  }
   const deposit=totalPaid('all'),profit=totalProfit('all'),expense=totalExpense('all'),remaining=deposit+profit-expense;
   q('personalTotalResult').innerHTML=`<div class="report-title"><h3>সংস্থার মোট হিসাব</h3><p>প্রতিষ্ঠার শুরু থেকে সকল বছরের সমন্বিত হিসাব</p></div>
   <div class="summary-grid total-summary">
@@ -350,6 +422,7 @@ function editExpense(id){const x=expenses.find(x=>String(x.id)===String(id));if(
 function editAsset(id){const x=assets.find(x=>String(x.id)===String(id));if(!x)return;const f=q('assetForm');f.id.value=x.id;f.year.value=x.year;f.date.value=x.date;f.category.value=x.category;f.description.value=x.description;f.amount.value=x.amount;openForm('asset');f.scrollIntoView({behavior:'smooth',block:'start'})}
 function editNotice(id){const x=notices.find(x=>String(x.id)===String(id));if(!x)return;const f=q('noticeForm');f.id.value=x.id;f.title.value=x.title;f.description.value=x.description;openForm('notice');f.scrollIntoView({behavior:'smooth',block:'start'})}
 function renderAdminData(){
+  renderAccountingVisibility();
   const orderedMembers=members.slice().sort(memberSort);
   q('adminMembers').innerHTML=`<table><thead><tr><th>ক্রম</th><th class="name">নাম</th><th>মোবাইল</th><th>অ্যাকশন</th></tr></thead><tbody>`+orderedMembers.map((m,i)=>`<tr><td>${Number(m.serial_no||i+1).toLocaleString('bn-BD')}</td><td class="name">${esc(m.name)}</td><td>${esc(m.mobile||'-')}</td><td class="row-actions"><button class="small-btn edit" onclick="editMember('${esc(m.id)}')">Edit</button><button class="small-btn del" onclick="del('members','${esc(m.id)}')">Delete</button></td></tr>`).join('')+`</tbody></table>`;
   const selectedYear=q('paymentManageYear').value||'all';
@@ -379,14 +452,14 @@ function renderAdminData(){
   q('adminAssets').innerHTML=`<table><thead><tr><th>বছর</th><th>খাত</th><th class="name">বিবরণ</th><th>পরিমাণ</th><th>অ্যাকশন</th></tr></thead><tbody>`+assets.map(x=>`<tr><td>${esc(x.year)}</td><td>${esc(x.category)}</td><td class="name">${esc(x.description)}</td><td>${money(x.amount)}</td><td class="row-actions"><button class="small-btn edit" onclick="editAsset('${esc(x.id)}')">Edit</button><button class="small-btn del" onclick="del('assets','${esc(x.id)}')">Delete</button></td></tr>`).join('')+`</tbody></table>`;
   q('adminNotices').innerHTML=`<table><thead><tr><th>শিরোনাম</th><th class="name">বিবরণ</th><th>তারিখ</th><th>অ্যাকশন</th></tr></thead><tbody>`+notices.map(x=>`<tr><td>${esc(x.title)}</td><td class="name">${esc(x.description)}</td><td>${esc(x.publish_date||'')}</td><td class="row-actions"><button class="small-btn edit" onclick="editNotice('${esc(x.id)}')">Edit</button><button class="small-btn del" onclick="del('notices','${esc(x.id)}')">Delete</button></td></tr>`).join('')+`</tbody></table>`;
 }
-async function checkAdmin(){if(window.__ADMIN_MEMBER_USER){adminUser=window.__ADMIN_MEMBER_USER;q('loginBox').hidden=true;q('adminBox').hidden=false;q('adminUser').textContent=adminUser.email||'Admin';loadDividendVisibility().then(()=>renderAdminData());return true}if(!sb)return false;const {data:{session}}=await sb.auth.getSession();adminUser=session?.user||null;if(!adminUser){q('loginBox').hidden=false;q('adminBox').hidden=true;return false}const {data,error}=await sb.from('admin_users').select('user_id').eq('user_id',adminUser.id).maybeSingle();if(error||!data){q('loginBox').hidden=false;q('adminBox').hidden=true;q('loginMsg').textContent='এই অ্যাকাউন্টে অ্যাডমিন অনুমতি নেই।';return false}q('loginBox').hidden=true;q('adminBox').hidden=false;q('adminUser').textContent=adminUser.email||'Admin';loadDividendVisibility().then(()=>renderAdminData());return true}
+async function checkAdmin(){if(window.__ADMIN_MEMBER_USER){adminUser=window.__ADMIN_MEMBER_USER;q('loginBox').hidden=true;q('adminBox').hidden=false;q('adminUser').textContent=adminUser.email||'Admin';Promise.all([loadAccountingVisibility(),loadDividendVisibility()]).then(()=>renderAdminData());return true}if(!sb)return false;const {data:{session}}=await sb.auth.getSession();adminUser=session?.user||null;if(!adminUser){q('loginBox').hidden=false;q('adminBox').hidden=true;return false}const {data,error}=await sb.from('admin_users').select('user_id').eq('user_id',adminUser.id).maybeSingle();if(error||!data){q('loginBox').hidden=false;q('adminBox').hidden=true;q('loginMsg').textContent='এই অ্যাকাউন্টে অ্যাডমিন অনুমতি নেই।';return false}q('loginBox').hidden=true;q('adminBox').hidden=false;q('adminUser').textContent=adminUser.email||'Admin';Promise.all([loadAccountingVisibility(),loadDividendVisibility()]).then(()=>renderAdminData());return true}
 async function login(){if(!sb){showMessage('Supabase configuration পাওয়া যায়নি।',false,'loginMsg');return}showMessage('লগইন হচ্ছে...',true,'loginMsg');const {error}=await sb.auth.signInWithPassword({email:q('adminEmail').value.trim(),password:q('adminPassword').value});if(error){showMessage(error.message,false,'loginMsg');return}await checkAdmin();q('adminPassword').value=''}
 async function logout(){try{if(window.__MEMBER_AUTH_SB)await window.__MEMBER_AUTH_SB.auth.signOut();}catch(_){}try{if(sb)await sb.auth.signOut()}catch(_){}location.hash='';location.reload()}
 function openForm(name){document.querySelectorAll('.admin-form').forEach(f=>f.classList.remove('active'));const f=q(name+'Form');if(f)f.classList.add('active')}
-function openManagement(name){document.querySelectorAll('.admin-data').forEach(x=>x.classList.remove('active'));q('managementArea').style.display='block';const target=q('manage'+name.charAt(0).toUpperCase()+name.slice(1));if(target)target.classList.add('active');if(name==='payments'||name==='profits'||name==='dividendVisibility')renderAdminData()}
+function openManagement(name){document.querySelectorAll('.admin-data').forEach(x=>x.classList.remove('active'));q('managementArea').style.display='block';const target=q('manage'+name.charAt(0).toUpperCase()+name.slice(1));if(target)target.classList.add('active');if(name==='payments'||name==='profits'||name==='dividendVisibility'||name==='accountingVisibility')renderAdminData()}
 function setMenu(open){const menu=q('mobileMenu'),overlay=q('menuOverlay'),btn=q('menuBtn');menu.classList.toggle('open',open);overlay.classList.toggle('show',open);btn.setAttribute('aria-expanded',String(open));document.body.classList.toggle('menu-open',open)}
 function openMainMenu(){setMenu(true)}
-function route(){const id=(location.hash||'#personal').slice(1);const valid=accessMode==='admin'?['personal','members','due','profitExpenseDetails','fund','notices','admin']:['personal','members','due','profitExpenseDetails','fund','notices'];const active=valid.includes(id)?id:'personal';document.querySelectorAll('.page-section').forEach(s=>s.classList.toggle('active',s.id===active));document.querySelectorAll('#mobileMenu a[data-view]').forEach(a=>a.classList.toggle('active',a.dataset.view===active));const adminLink=document.querySelector('#mobileMenu a[data-view="admin"]');if(adminLink)adminLink.hidden=accessMode!=='admin';setMenu(false)}
+function route(){const id=(location.hash||'#personal').slice(1);const memberPublicViews=['personal','members','due','profitExpenseDetails','fund','notices'];const valid=accessMode==='admin'?['personal','members','due','profitExpenseDetails','fund','notices','admin']:(accountingPublic?memberPublicViews:['personal']);const active=valid.includes(id)?id:'personal';document.querySelectorAll('.page-section').forEach(s=>s.classList.toggle('active',s.id===active));document.querySelectorAll('#mobileMenu a[data-view]').forEach(a=>{a.classList.toggle('active',a.dataset.view===active);if(accessMode==='member')a.hidden=(a.dataset.view==='admin')||(!accountingPublic&&a.dataset.view!=='personal');else a.hidden=false;});const adminLink=document.querySelector('#mobileMenu a[data-view="admin"]');if(adminLink)adminLink.hidden=accessMode!=='admin';setMenu(false)}
 function printSection(id){
   const target=q(id);
   if(!target)return;
@@ -543,7 +616,7 @@ function downloadAllMembersCSV(){const y=q('allMembersYear').value||'all';const 
 function downloadAssetsCSV(){csvDownload('fund-assets.csv',[['বছর','খাত','বিস্তারিত','পরিমাণ','তারিখ'],...assets.map(a=>[a.year,a.category,a.description,a.amount,a.date])])}
 
 function enterMemberApp(){accessMode='member';document.body.classList.add('member-mode');q('accessGate').style.display='none';q('appShell').style.display='block';q('menuBtn').style.display='block';const a=q('mobileMenu').querySelector('[data-view="admin"]');if(a)a.hidden=true;route();load();}
-async function enterAdminApp(){accessMode='admin';document.body.classList.remove('member-mode');q('accessGate').style.display='none';q('appShell').style.display='block';q('menuBtn').style.display='block';const a=q('mobileMenu').querySelector('[data-view="admin"]');if(a)a.hidden=false;route();await checkAdmin();await load();}
+async function enterAdminApp(){accessMode='admin';document.body.classList.remove('member-mode');q('accessGate').style.display='none';q('appShell').style.display='block';q('menuBtn').style.display='block';const a=q('mobileMenu').querySelector('[data-view="admin"]');if(a)a.hidden=false;await loadAccountingVisibility();route();await checkAdmin();await load();}
 window.enterMemberApp=enterMemberApp;window.enterAdminApp=enterAdminApp;
 
 document.addEventListener('DOMContentLoaded',()=>{
