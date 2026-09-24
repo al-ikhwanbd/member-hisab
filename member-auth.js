@@ -7,7 +7,8 @@
   const normalizeMobile=v=>String(v||'').replace(/[\s-]/g,'');
   // Phone Auth is disabled in this Supabase project. We keep the user's mobile
   // number as the login identifier, but use a deterministic internal email for Auth.
-  const authEmailFromMobile=mobile=>`${normalizeMobile(mobile)}@member.al-ikhwan.local`;
+  const authEmailFromMemberId=id=>`member-${String(id)}@member.al-ikhwan.local`;
+  let selectableMembers=[];
   const memberReady=window.MEMBER_SUPABASE_URL&&window.MEMBER_SUPABASE_ANON_KEY&&window.supabase;
   const mainReady=window.MAIN_SUPABASE_URL&&window.MAIN_SUPABASE_ANON_KEY&&window.supabase;
   const sb=memberReady?window.supabase.createClient(window.MEMBER_SUPABASE_URL,window.MEMBER_SUPABASE_ANON_KEY):null;
@@ -35,6 +36,17 @@
   function detectMonthly(){const p=mainData.payments.find(x=>Number(x.required_amount)>0);monthlyRequired=Number(p?.required_amount||DEFAULT_MONTHLY_REQUIRED)||DEFAULT_MONTHLY_REQUIRED;}
   function findMemberByMobile(mobile){return mainData.members.find(m=>normalizeMobile(m.mobile)===mobile)||null;}
 function findMemberById(id){return mainData.members.find(m=>String(m.id)===String(id))||null;}
+  function memberLabel(m,i){return `${Number(m.serial_no||i+1).toLocaleString('bn-BD')}. ${m.name}${m.mobile?' — '+m.mobile:''}`;}
+  async function loadSelectableMembers(){
+    if(!mainSb) return;
+    const {data,error}=await mainSb.from('members').select('id,name,serial_no,mobile,status').eq('status','active').order('serial_no',{ascending:true,nullsFirst:false}).order('created_at');
+    if(error){msg(error.message);return;}
+    selectableMembers=data||[];
+    ['loginMember','signupMember'].forEach(id=>{
+      const el=$(id); if(!el)return;
+      el.innerHTML='<option value="">-- সদস্যের নাম নির্বাচন করুন --</option>'+selectableMembers.map((m,i)=>`<option value="${esc(m.id)}">${esc(memberLabel(m,i))}</option>`).join('');
+    });
+  }
   async function loadMainData(onlyMember=null){
     if(!mainSb) throw new Error('মূল হিসাবের Supabase configuration পাওয়া যায়নি।');
     const [m,p,pr,e]=await Promise.all([
@@ -53,29 +65,33 @@ function findMemberById(id){return mainData.members.find(m=>String(m.id)===Strin
   async function signUp(e){
     e.preventDefault();
     if(!sb){msg('সদস্য Login configuration পাওয়া যায়নি।');return;}
-    const f=new FormData(e.currentTarget),name=String(f.get('full_name')||'').trim(),address=String(f.get('address')||'').trim(),mobile=normalizeMobile(f.get('mobile')),password=String(f.get('password')||'');
-    if(name.length<2||address.length<2){msg('নাম ও ঠিকানা সঠিকভাবে দিন।');return;}
+    const f=new FormData(e.currentTarget),memberId=String(f.get('member_id')||''),address=String(f.get('address')||'').trim(),mobile=normalizeMobile(f.get('mobile')),password=String(f.get('password')||'');
+    const selected=findMemberById(memberId)||selectableMembers.find(m=>String(m.id)===memberId);
+    if(!selected){msg('আগে তালিকা থেকে আপনার সদস্যের নাম নির্বাচন করুন।');return;}
+    if(address.length<2){msg('সঠিক ঠিকানা দিন।');return}
     if(!validMobile(mobile)){msg('সঠিক ১১ সংখ্যার মোবাইল নম্বর দিন।');return}
     if(password.length<6){msg('পাসওয়ার্ড কমপক্ষে ৬ অক্ষরের হতে হবে।');return}
-    const authEmail=authEmailFromMobile(mobile);
+    const authEmail=authEmailFromMemberId(memberId);
     msg('অ্যাকাউন্ট তৈরি হচ্ছে...',true);
     try{
-      const {data,error}=await sb.auth.signUp({email:authEmail,password,options:{data:{full_name:name,mobile:mobile||null,login_method:'phone'}}});
+      const {data,error}=await sb.auth.signUp({email:authEmail,password,options:{data:{full_name:selected.name,mobile:mobile||null,main_member_id:memberId,login_method:'member_name'}}});
       if(error) throw error;
       const uid=data.user?.id;if(!uid) throw new Error('অ্যাকাউন্ট তৈরি হয়েছে, কিন্তু ব্যবহারকারী আইডি পাওয়া যায়নি।');
-      const {error:pe}=await sb.from('member_profiles').insert({id:uid,full_name:name,address,mobile:mobile||null,email:null,status:'pending'});
+      const {error:pe}=await sb.from('member_profiles').insert({id:uid,full_name:selected.name,address,mobile:mobile||null,email:null,status:'pending'});
       if(pe){await sb.auth.signOut();throw pe;}
-      await sb.auth.signOut();e.currentTarget.reset();toggle('login');msg('অ্যাকাউন্ট তৈরি হয়েছে। এখন অ্যাডমিন আপনার তথ্য যাচাই করে মূল সদস্যের সঙ্গে যুক্ত করে অনুমোদন করবেন।',true);
+      await sb.auth.signOut();e.currentTarget.reset();$('signupMember').value='';toggle('login');msg('অ্যাকাউন্ট তৈরি হয়েছে। অ্যাডমিন আপনার তথ্য যাচাই করে অনুমোদন করবেন। এরপর সদস্যের নাম ও পাসওয়ার্ড দিয়ে লগইন করতে পারবেন।',true);
     }catch(err){msg(err.message||'অ্যাকাউন্ট তৈরি করা যায়নি।');}
   }
   async function signIn(e){
     e.preventDefault();
     if(!sb){msg('সদস্য Login configuration পাওয়া যায়নি।');return;}
-    const f=new FormData(e.currentTarget),mobile=normalizeMobile(f.get('mobile')),password=String(f.get('password')||'');
-    if(!validMobile(mobile)){msg('সঠিক ১১ সংখ্যার মোবাইল নম্বর দিন।');return}
+    const f=new FormData(e.currentTarget),memberId=String(f.get('member_id')||''),password=String(f.get('password')||'');
+    const selected=findMemberById(memberId)||selectableMembers.find(m=>String(m.id)===memberId);
+    if(!selected){msg('আগে তালিকা থেকে আপনার সদস্যের নাম নির্বাচন করুন।');return}
+    if(password.length<6){msg('সঠিক পাসওয়ার্ড দিন।');return}
     msg('লগইন হচ্ছে...',true);
-    const {error}=await sb.auth.signInWithPassword({email:authEmailFromMobile(mobile),password});
-    if(error){msg(error.message);return}
+    const {error}=await sb.auth.signInWithPassword({email:authEmailFromMemberId(memberId),password});
+    if(error){msg('সদস্যের নাম অথবা পাসওয়ার্ড সঠিক নয়।');return}
     await loadSession();
   }
   async function loadSession(){
@@ -93,7 +109,7 @@ function findMemberById(id){return mainData.members.find(m=>String(m.id)===Strin
       if(!currentMainMember) throw new Error('অ্যাডমিন যে সদস্যের সঙ্গে অ্যাকাউন্ট যুক্ত করেছেন, সেই সদস্যটি মূল তালিকায় পাওয়া যায়নি।');
     }catch(err){msg(err.message||'হিসাব লোড করা যায়নি।');showOnly('auth');return}
     showOnly('dashboard');
-    $('memberName').textContent=currentProfile.full_name;$('memberMobile').textContent=currentProfile.mobile;
+    $('memberName').textContent=currentProfile.full_name;$('memberMobile').textContent=currentProfile.mobile||'—';
     $('memberProfile').innerHTML=`<div class="profile-item"><span>নাম</span><strong>${esc(currentProfile.full_name)}</strong></div><div class="profile-item"><span>ঠিকানা</span><strong>${esc(currentProfile.address)}</strong></div><div class="profile-item"><span>লগইন মোবাইল</span><strong>${esc(currentProfile.mobile)}</strong></div><div class="profile-item"><span>মূল সদস্য</span><strong>${esc(currentMainMember.name)}</strong></div>`;
     await loadDashboard();
   }
@@ -140,7 +156,7 @@ function findMemberById(id){return mainData.members.find(m=>String(m.id)===Strin
       const options=(membersList||[]).map((m,i)=>`<option value="${esc(m.id)}">${Number(m.serial_no||i+1).toLocaleString('bn-BD')}. ${esc(m.name)}${m.mobile?' — '+esc(m.mobile):''}</option>`).join('');
       rows+=`<tr><td>${esc(x.full_name)}</td><td>${esc(x.address)}</td><td>${esc(x.mobile||'')}</td><td><select id="link_${esc(x.id)}"><option value="">-- সদস্যের নাম নির্বাচন করুন --</option>${options}</select></td><td>${new Date(x.created_at).toLocaleDateString('bn-BD')}</td><td><button class="small-btn approve" onclick="window.memberApprove('${x.id}')">যুক্ত করুন ও অনুমোদন</button> <button class="small-btn reject" onclick="window.memberReject('${x.id}')">বাতিল</button></td></tr>`;
     }
-    box.innerHTML=controls+`<div class="admin-link-box"><b>নতুন নিয়ম:</b> সদস্য শুধু মোবাইল নম্বর দিয়ে সাইন আপ ও লগইন করতে পারবে। অ্যাডমিন তথ্য যাচাই করে নিচের তালিকা থেকে মূল সদস্য নির্বাচন করে অ্যাকাউন্টটি অনুমোদন করবেন।</div><table><thead><tr><th>সাইন আপ নাম</th><th>ঠিকানা</th><th>লগইন তথ্য</th><th>মূল সদস্য</th><th>তারিখ</th><th>অ্যাকশন</th></tr></thead><tbody>${rows||'<tr><td colspan="6">কোনো Pending account নেই</td></tr>'}</tbody></table>`;
+    box.innerHTML=controls+`<div class="admin-link-box"><b>নতুন নিয়ম:</b> সদস্য সাইন আপের সময় মূল সদস্য তালিকা থেকে নিজের নাম নির্বাচন করবে। অ্যাডমিন তথ্য যাচাই করে একই সদস্যকে অ্যাকাউন্টের সঙ্গে যুক্ত করে অনুমোদন করবেন। লগইনের সময় সদস্যের নাম ও পাসওয়ার্ড ব্যবহার হবে।</div><table><thead><tr><th>সাইন আপ নাম</th><th>ঠিকানা</th><th>লগইন তথ্য</th><th>মূল সদস্য</th><th>তারিখ</th><th>অ্যাকশন</th></tr></thead><tbody>${rows||'<tr><td colspan="6">কোনো Pending account নেই</td></tr>'}</tbody></table>`;
     await loadLinkedMembers(membersList||[]);
   }
   async function loadLinkedMembers(membersList=[]){
@@ -165,6 +181,6 @@ function findMemberById(id){return mainData.members.find(m=>String(m.id)===Strin
   }
   window.memberApprove=id=>setStatus(id,'approved');window.memberReject=id=>setStatus(id,'rejected');
   $('showSignup').onclick=()=>toggle('signup');$('backToLogin').onclick=()=>toggle('login');$('signupForm').onsubmit=signUp;$('loginForm').onsubmit=signIn;$('memberLogout').onclick=logout;$('pendingLogout').onclick=logout;$('adminLoginForm').onsubmit=adminLogin;$('footerYear').textContent=new Date().getFullYear();
-  if(location.hash==='#admin')$('adminPanel').hidden=false; else $('adminPanel').hidden=true; setLoginMethod('phone');setSignupMethod('phone');toggle('login');
-  if(!sb||!mainSb){msg('প্রয়োজনীয় Supabase configuration পাওয়া যায়নি।',false);}else loadSession();
+  if(location.hash==='#admin')$('adminPanel').hidden=false; else $('adminPanel').hidden=true; toggle('login');
+  if(!sb||!mainSb){msg('প্রয়োজনীয় Supabase configuration পাওয়া যায়নি।',false);}else {loadSelectableMembers();loadSession();}
 })();

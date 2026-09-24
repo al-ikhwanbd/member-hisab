@@ -49,8 +49,3 @@ create trigger member_account_links_touch
 before update on public.member_account_links
 for each row execute function public.member_account_links_touch_updated_at();
 
--- Email login support: existing member_profiles table-এ email column যোগ করুন।
-alter table public.member_profiles add column if not exists email text;
-create unique index if not exists member_profiles_email_unique
-  on public.member_profiles (lower(email))
-  where email is not null and length(trim(email)) > 0;

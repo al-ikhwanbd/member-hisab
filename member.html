@@ -20,20 +20,20 @@
       <div class="brand-text"><strong>আল ইখওয়ান ইসলামী সংস্থা বাংলাদেশ</strong><span>সদস্য অ্যাকাউন্ট</span></div>
     </a>
   </div>
-  <div class="hero"><div class="container"><h1>সদস্য অ্যাকাউন্ট</h1><p>শুধু মোবাইল নম্বর দিয়ে সদস্য অ্যাকাউন্ট তৈরি করুন</p></div></div>
+  <div class="hero"><div class="container"><h1>সদস্য অ্যাকাউন্ট</h1><p>সদস্যের নাম ও পাসওয়ার্ড দিয়ে সহজে সদস্য অ্যাকাউন্ট ব্যবহার করুন</p></div></div>
 </header>
 <main class="container main member-main">
   <section id="authCard" class="result-card member-card">
-    <div class="section-title"><span class="title-icon">👤</span><div><h2 id="authTitle">সদস্য লগইন</h2><p id="authSubtitle">মোবাইল নম্বর ও পাসওয়ার্ড দিয়ে সহজে সদস্য অ্যাকাউন্টে প্রবেশ করুন।</p></div></div>
+    <div class="section-title"><span class="title-icon">👤</span><div><h2 id="authTitle">সদস্য লগইন</h2><p id="authSubtitle">আপনার সদস্যের নাম নির্বাচন করে পাসওয়ার্ড দিয়ে লগইন করুন।</p></div></div>
     <form id="loginForm" class="member-form">
-      <label>মোবাইল নম্বর <b>*</b><input id="loginMobile" name="mobile" inputmode="tel" autocomplete="tel" placeholder="01XXXXXXXXX"></label>
+      <label>সদস্যের নাম <b>*</b><select id="loginMember" name="member_id" required><option value="">-- সদস্যের নাম নির্বাচন করুন --</option></select></label>
       <label>পাসওয়ার্ড <b>*</b><input name="password" required type="password" autocomplete="current-password" placeholder="পাসওয়ার্ড"></label>
       <button class="btn btn-primary full" type="submit">🔐 সদস্য লগইন</button>
     </form>
     <div class="signup-divider"><span>নতুন সদস্য?</span></div>
     <button id="showSignup" class="btn btn-light full signup-open" type="button">📝 Sign Up / নতুন অ্যাকাউন্ট তৈরি</button>
     <form id="signupForm" class="member-form" hidden>
-      <label>পূর্ণ নাম <b>*</b><input name="full_name" required minlength="2" autocomplete="name" placeholder="আপনার নাম"></label>
+      <label>সদস্যের নাম <b>*</b><select id="signupMember" name="member_id" required><option value="">-- সদস্যের নাম নির্বাচন করুন --</option></select></label>
       <label>ঠিকানা <b>*</b><textarea name="address" required minlength="2" autocomplete="street-address" placeholder="আপনার ঠিকানা"></textarea></label>
       <label>মোবাইল নম্বর <b>*</b><input id="signupMobile" name="mobile" inputmode="tel" autocomplete="tel" placeholder="01XXXXXXXXX"></label>
       <label>পাসওয়ার্ড <b>*</b><input name="password" required type="password" minlength="6" autocomplete="new-password" placeholder="কমপক্ষে ৬ অক্ষর"></label>
