@@ -209,8 +209,29 @@ function findMemberById(id){return mainData.members.find(m=>String(m.id)===Strin
     if(status==='approved'){
       const select=$(`link_${id}`); const mainMemberId=select?.value||'';
       if(!mainMemberId){msg('আগে মূল সদস্যের নাম নির্বাচন করুন।',false,'adminMsg');return}
-      const {error:le}=await sb.from('member_account_links').upsert({member_user_id:id,main_member_id:mainMemberId,updated_at:new Date().toISOString()},{onConflict:'member_user_id'});
-      if(le){msg('সদস্য-অ্যাকাউন্ট সংযোগ সংরক্ষণ করা যায়নি। member_account_links SQL সেটআপ করুন।',false,'adminMsg');return}
+      // The table has a unique constraint on main_member_id as well as member_user_id.
+      // Check that the selected main member is not already linked to a different account;
+      // otherwise PostgREST can reject an upsert on the second unique key.
+      const {data:existingLink,error:checkLinkError}=await sb.from('member_account_links')
+        .select('member_user_id,main_member_id')
+        .eq('main_member_id',mainMemberId)
+        .maybeSingle();
+      if(checkLinkError){
+        msg('সদস্য-অ্যাকাউন্ট সংযোগ যাচাই করা যায়নি: '+(checkLinkError.message||'ডাটাবেস অনুমতি/টেবিল পরীক্ষা করুন।'),false,'adminMsg');
+        return;
+      }
+      if(existingLink && String(existingLink.member_user_id)!==String(id)){
+        msg('এই মূল সদস্যের হিসাব ইতিমধ্যে অন্য একটি সদস্য অ্যাকাউন্টের সঙ্গে যুক্ত আছে। অন্য সদস্য নির্বাচন করুন।',false,'adminMsg');
+        return;
+      }
+      const {error:le}=await sb.from('member_account_links').upsert(
+        {member_user_id:id,main_member_id:mainMemberId,updated_at:new Date().toISOString()},
+        {onConflict:'member_user_id'}
+      );
+      if(le){
+        msg('সদস্য-অ্যাকাউন্ট সংযোগ সংরক্ষণ করা যায়নি: '+(le.message||'ডাটাবেসে সংরক্ষণ ব্যর্থ হয়েছে।'),false,'adminMsg');
+        return;
+      }
     }
     const {error}=await sb.from('member_profiles').update({status,approved_at:status==='approved'?new Date().toISOString():null}).eq('id',id).eq('status','pending');
     if(error){msg(error.message,false,'adminMsg');return}await loadPending();
