@@ -91,8 +91,9 @@ function findMemberById(id){return mainData.members.find(m=>String(m.id)===Strin
   }
   async function signUp(e){
     e.preventDefault();
+    const form=e.currentTarget;
     if(!sb){msg('সদস্য Login configuration পাওয়া যায়নি।');return;}
-    const f=new FormData(e.currentTarget),memberId=String(f.get('member_id')||''),address=String(f.get('address')||'').trim(),mobile=normalizeMobile(f.get('mobile')),password=String(f.get('password')||'');
+    const f=new FormData(form),memberId=String(f.get('member_id')||''),address=String(f.get('address')||'').trim(),mobile=normalizeMobile(f.get('mobile')),password=String(f.get('password')||'');
     const selected=findMemberById(memberId)||selectableMembers.find(m=>String(m.id)===memberId);
     if(!selected){msg('আগে তালিকা থেকে আপনার সদস্যের নাম নির্বাচন করুন।');return;}
     if(address.length<2){msg('সঠিক ঠিকানা দিন।');return}
@@ -106,7 +107,7 @@ function findMemberById(id){return mainData.members.find(m=>String(m.id)===Strin
       const uid=data.user?.id;if(!uid) throw new Error('অ্যাকাউন্ট তৈরি হয়েছে, কিন্তু ব্যবহারকারী আইডি পাওয়া যায়নি।');
       const {error:pe}=await sb.from('member_profiles').insert({id:uid,full_name:selected.name,address,mobile:mobile||null,status:'pending'});
       if(pe){await sb.auth.signOut();throw pe;}
-      await sb.auth.signOut();e.currentTarget.reset();$('signupMember').value='';openAuthPanel('login');msg('অ্যাকাউন্ট তৈরি হয়েছে। অ্যাডমিন আপনার তথ্য যাচাই করে অনুমোদন করবেন। এরপর সদস্যের নাম ও পাসওয়ার্ড দিয়ে লগইন করতে পারবেন।',true);
+      await sb.auth.signOut();form.reset();$('signupMember').value='';openAuthPanel('login');msg('অ্যাকাউন্ট তৈরি হয়েছে। অ্যাডমিন আপনার তথ্য যাচাই করে অনুমোদন করবেন। এরপর সদস্যের নাম ও পাসওয়ার্ড দিয়ে লগইন করতে পারবেন।',true);
     }catch(err){
       const raw=String(err?.message||'');
       if(/rate limit/i.test(raw)||/email rate limit/i.test(raw)){
@@ -170,13 +171,14 @@ function findMemberById(id){return mainData.members.find(m=>String(m.id)===Strin
   }
   async function logout(){if(sb)await sb.auth.signOut();currentProfile=null;currentMainMember=null;showOnly('auth');showChooser();}
   async function adminLogin(e){
-    e.preventDefault();if(!sb){msg('Member Supabase configuration পাওয়া যায়নি।','adminMsg');return;}
-    const f=new FormData(e.currentTarget),email=String(f.get('email')||'').trim(),password=String(f.get('password')||'');
+    e.preventDefault();
+    const form=e.currentTarget;if(!sb){msg('Member Supabase configuration পাওয়া যায়নি।','adminMsg');return;}
+    const f=new FormData(form),email=String(f.get('email')||'').trim(),password=String(f.get('password')||'');
     const {data,error}=await sb.auth.signInWithPassword({email,password});
     if(error){msg(error.message,false,'adminMsg');return}
     const {data:au,error:ae}=await sb.from('member_admins').select('user_id').eq('user_id',data.user.id).maybeSingle();
     if(ae||!au){await sb.auth.signOut();msg('এই অ্যাকাউন্টে অ্যাডমিন অনুমতি নেই।',false,'adminMsg');return}
-    e.currentTarget.hidden=true;await loadPending();
+    form.hidden=true;await loadPending();
   }
   async function loadPending(){
     const box=$('pendingMembers');box.hidden=false;const publicAll=await getVisibility();

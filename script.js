@@ -422,9 +422,21 @@ async function login(){
   if(error){q('gateLoginMsg').textContent=error.message;return}
   const ok=await checkAdmin();
   if(ok){
-    const {error:mainAuthError}=sb?await sb.auth.signInWithPassword({email:q('gateAdminEmail').value.trim(),password:q('gateAdminPassword').value}):{error:new Error('Main Supabase unavailable')};
+    const enteredEmail=q('gateAdminEmail').value.trim().toLowerCase();
+    const password=q('gateAdminPassword').value;
+    // Member Supabase ও Main Supabase-এ Admin email আলাদা হতে পারে।
+    // তাই অনুমোদিত দুই Admin email-এর mapping অনুযায়ী Main Supabase-এ চেষ্টা করা হয়।
+    const mainAdminEmails=[enteredEmail, 'mdkefayatullah25@gmail.com', 'alikhwanisbd@gmail.com'].filter((v,i,a)=>v&&a.indexOf(v)===i);
+    let mainAuthError=null;
+    if(sb){
+      for(const mainEmail of mainAdminEmails){
+        const attempt=await sb.auth.signInWithPassword({email:mainEmail,password});
+        if(!attempt.error){mainAuthError=null;break;}
+        mainAuthError=attempt.error;
+      }
+    }else mainAuthError=new Error('Main Supabase unavailable');
     mainAdminReady=!mainAuthError;
-    if(mainAuthError){q('gateLoginMsg').textContent='এডমিন লগইন হয়েছে। তবে মূল হিসাব সংরক্ষণ/পরিবর্তনের জন্য Main Supabase-এ একই Admin account সেটআপ করা বাকি।';}
+    if(mainAuthError){q('gateLoginMsg').textContent='এডমিন লগইন হয়েছে। তবে মূল হিসাবের Main Supabase Admin account-এর email/password মিলছে না। Main Supabase-এ অনুমোদিত Admin account-এর একই password ব্যবহার করুন।';}
     else q('gateLoginMsg').textContent='এডমিন লগইন সফল হয়েছে।';
     q('gateAdminPassword').value='';
     await load();
