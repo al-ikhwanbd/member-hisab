@@ -8,7 +8,7 @@
 <link rel="icon" type="image/png" href="favicon.png">
 <link rel="apple-touch-icon" href="icon-192.png">
 <link rel="stylesheet" href="style.css?v=46">
-<link rel="stylesheet" href="member-auth.css?v=6">
+<link rel="stylesheet" href="member-auth.css?v=7">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <title>সদস্য অ্যাকাউন্ট — আল ইখওয়ান ইসলামী সংস্থা বাংলাদেশ</title>
 </head>
@@ -29,13 +29,11 @@
   <div class="drawer-logo"><img src="Al ikhwan logo.jpg" alt="আল ইখওয়ান ইসলামী সংস্থার লোগো"></div>
   <div class="drawer-title">মেইন মেনু</div>
   <a href="#dashboard" data-member-view="dashboard"><span>👤</span>সদস্যদের ব্যক্তিগত হিসাব</a>
-  <a href="#allMembersSection" data-member-view="all"><span>👥</span>সকল সদস্যদের হিসাব</a>
-  <a href="#organizationSummary" data-member-view="org"><span>📊</span>সংস্থার মোট হিসাব</a>
-  <a href="#dashboard"><span>📋</span>লভ্যাংশ ও খরচের বিবরণ</a>
-  <a href="#dashboard"><span>💰</span>অবশিষ্ট তহবিলের খাত</a>
-  <a href="#dashboard"><span>📢</span>নোটিশ</a>
-  <a href="#admin"><span>🔐</span>এডমিন প্যানেল</a>
-  <a href="index.html"><span>🏠</span>মূল পেজ</a>
+  <a href="#members" data-member-view="members"><span>👥</span>সকল সদস্যদের হিসাব</a>
+  <a href="#due" data-member-view="due"><span>📊</span>সংস্থার মোট হিসাব</a>
+  <a href="#profitExpenseDetails" data-member-view="profitExpenseDetails"><span>📋</span>লভ্যাংশ ও খরচের বিবরণ</a>
+  <a href="#fund" data-member-view="fund"><span>💰</span>অবশিষ্ট তহবিলের খাত</a>
+  <a href="#notices" data-member-view="notices"><span>📢</span>নোটিশ</a>
   <a href="#" id="memberMenuLogout"><span>🚪</span>লগআউট</a>
 </nav>
 <main class="container main member-main">
@@ -79,30 +77,54 @@
   <section id="dashboard" class="result-card member-card" hidden>
     <div class="member-dashboard-head"><div><div class="eyebrow">সদস্য অ্যাকাউন্ট</div><h2 id="memberName">—</h2><p id="memberMobile">—</p></div><button id="memberLogout" class="btn danger">লগআউট</button></div>
     <div id="memberProfile" class="profile-grid"></div>
-    <div id="personalSummary" class="summary-grid member-summary"></div>
-    <div class="section-title compact"><span class="title-icon">📊</span><div><h2>ব্যক্তিগত হিসাব</h2><p>সকল বছরের হিসাব ও মাসভিত্তিক তথ্য</p></div></div>
-    <div id="personalAccount" class="report-output"><div class="loading">হিসাব লোড হচ্ছে...</div></div>
-    <div id="allMembersSection" hidden>
-      <div class="section-title compact"><span class="title-icon">👥</span><div><h2>সকল সদস্যের হিসাব</h2><p>অ্যাডমিন Public করলে সকল অনুমোদিত সদস্যের হিসাব এখানে দেখা যাবে</p></div></div>
-      <div id="allMembersAccount" class="report-output"></div>
-    </div>
-    <div class="section-title compact"><span class="title-icon">🏦</span><div><h2>সংস্থার সামগ্রিক তথ্য</h2><p>সদস্য হিসেবে যে তথ্যগুলো সবার জন্য উন্মুক্ত</p></div></div>
-    <div id="organizationSummary" class="report-output"><div class="loading">তথ্য লোড হচ্ছে...</div></div>
-  </section>
 
-  <section id="adminPanel" class="result-card member-card" hidden>
-    <div class="section-title"><span class="title-icon">🔐</span><div><h2>মেম্বার অনুমোদন</h2><p>শুধু অনুমোদিত অ্যাডমিনের জন্য — এখান থেকে সদস্য অনুমোদন ও হিসাবের দৃশ্যমানতা নিয়ন্ত্রণ করা যাবে</p></div></div>
-    <form id="adminLoginForm" class="member-form">
-      <label>অ্যাডমিন ইমেইল<input name="email" type="email" required autocomplete="username"></label>
-      <label>পাসওয়ার্ড<input name="password" type="password" required autocomplete="current-password"></label>
-      <button class="btn btn-primary full">অ্যাডমিন লগইন</button>
-    </form>
-    <div id="adminMsg" class="message"></div>
-    <div id="pendingMembers" class="table-wrap" hidden></div><div id="linkedMembers" class="table-wrap" hidden></div>
+    <section id="personal" class="member-view page-section active">
+      <div class="section-title">
+        <span class="title-icon">👤</span>
+        <div><h2>সদস্যদের ব্যক্তিগত হিসাব</h2><p>সাল ও সদস্য নির্বাচন করে ব্যক্তিগত হিসাব দেখুন</p></div>
+      </div>
+      <form id="personalForm" novalidate>
+        <div class="field"><label for="personalYear">সাল নির্বাচন করুন <b>*</b></label><select id="personalYear" required></select></div>
+        <div class="field"><label for="personalMember">সদস্য নির্বাচন করুন <b>*</b></label><select id="personalMember" required></select></div>
+        <div class="actions single-action"><button type="submit" class="btn btn-primary">অনুসন্ধান করুন</button></div>
+      </form>
+      <div id="personalMessage" class="message hidden"></div>
+      <div id="personalResult" class="report-output"><div class="empty-state">সাল ও সদস্য নির্বাচন করে অনুসন্ধান করুন।</div></div>
+      <div id="personalTotalResult" class="report-output"></div>
+    </section>
+
+    <section id="members" class="member-view page-section">
+      <div class="section-title"><span class="title-icon">👥</span><div><h2>সকল সদস্যদের হিসাব</h2><p>নির্বাচিত বছরের সকল সদস্যের মাসিক হিসাব দেখুন</p></div></div>
+      <form id="membersForm" novalidate>
+        <div class="field"><label for="allMembersYear">সাল নির্বাচন করুন <b>*</b></label><select id="allMembersYear" required></select></div>
+        <div class="actions single-action"><button type="submit" class="btn btn-primary">হিসাব দেখুন</button></div>
+      </form>
+      <div id="allMembersResult" class="report-output"><div class="empty-state">একটি বছর নির্বাচন করে হিসাব দেখুন।</div></div>
+    </section>
+
+    <section id="due" class="member-view page-section">
+      <div class="section-title"><span class="title-icon">📊</span><div><h2>সংস্থার মোট হিসাব</h2><p>সংস্থার সকল বছরের মোট আর্থিক হিসাব</p></div></div>
+      <div id="totalResult" class="report-output"><div class="loading">ডাটা লোড হচ্ছে...</div></div>
+    </section>
+
+    <section id="profitExpenseDetails" class="member-view page-section">
+      <div class="section-title"><span class="title-icon">📋</span><div><h2>লভ্যাংশ ও খরচের বিবরণ</h2><p>লভ্যাংশ ও বিবিধ খরচের বিস্তারিত হিসাব</p></div></div>
+      <div id="profitExpenseDetailsResult" class="report-output"><div class="loading">ডাটা লোড হচ্ছে...</div></div>
+    </section>
+
+    <section id="fund" class="member-view page-section">
+      <div class="section-title"><span class="title-icon">💰</span><div><h2>অবশিষ্ট তহবিলের খাত</h2><p>কোন কোন খাতে অর্থ ব্যবহার হয়েছে এবং বর্তমানে কত তহবিল আছে</p></div></div>
+      <div id="fundResult" class="report-output"></div>
+    </section>
+
+    <section id="notices" class="member-view page-section">
+      <div class="section-title"><span class="title-icon">📢</span><div><h2>নোটিশ</h2><p>সংস্থার প্রকাশিত ঘোষণা ও নোটিশ</p></div></div>
+      <div id="noticeResult" class="notice-list"><div class="loading">ডাটা লোড হচ্ছে...</div></div>
+    </section>
   </section>
 </main>
 <footer><div class="container">© <span id="footerYear"></span> আল ইখওয়ান ইসলামী সংস্থা বাংলাদেশ<div class="footer-sub">সদস্য অ্যাকাউন্ট</div></div></footer>
 <script src="member-auth-config.js?v=3"></script>
-<script src="member-auth.js?v=6"></script>
+<script src="member-auth.js?v=7"></script>
 </body>
 </html>

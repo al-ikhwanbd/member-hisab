@@ -90,15 +90,17 @@ function findMemberById(id){return mainData.members.find(m=>String(m.id)===Strin
       }
       return {data:rows,error:null};
     };
-    const [m,p,pr,e]=await Promise.all([
+    const [m,p,pr,e,a,n]=await Promise.all([
       mainSb.from('members').select('*').eq('status','active').order('serial_no',{ascending:true,nullsFirst:false}).order('created_at'),
       fetchAllPayments(),
       mainSb.from('profits').select('*').order('year'),
-      mainSb.from('expenses').select('*').order('date',{ascending:false})
+      mainSb.from('expenses').select('*').order('date',{ascending:false}),
+      mainSb.from('assets').select('*').order('date',{ascending:false}),
+      mainSb.from('notices').select('*').order('publish_date',{ascending:false})
     ]);
-    const errors=[m,p,pr,e].filter(x=>x.error);
+    const errors=[m,p,pr,e,a,n].filter(x=>x.error);
     if(errors.length) throw errors[0].error;
-    mainData={members:m.data||[],payments:p.data||[],profits:pr.data||[],expenses:e.data||[],assets:[],notices:[]};
+    mainData={members:m.data||[],payments:p.data||[],profits:pr.data||[],expenses:e.data||[],assets:a.data||[],notices:n.data||[]};
     detectMonthly();
     currentMainMember=onlyMember?findMemberById(onlyMember):null;
     return currentMainMember;
@@ -171,17 +173,137 @@ function findMemberById(id){return mainData.members.find(m=>String(m.id)===Strin
   function personalRows(m){
     return years().map(y=>`<tr><td>${y}</td><td>${money(calcPaid(m,y))}</td><td>${money(due(m,y))}</td></tr>`).join('');
   }
+  function memberMonthPaid(m,y,month){
+    return mainData.payments.filter(p=>String(p.member_id)===String(m.id)&&Number(String(p.year))===Number(String(y))&&Number(p.month)===month).reduce((s,p)=>s+Number(p.paid_amount||0),0);
+  }
+  function memberPaid(m,year='all'){
+    const target=year==='all'||!year?null:String(year);
+    return mainData.payments.filter(p=>String(p.member_id)===String(m.id)&&(target===null||String(p.year)===target)).reduce((s,p)=>s+Number(p.paid_amount||0),0);
+  }
+  function memberRequired(year='all'){return (year==='all'?years().length:1)*monthlyRequired*12;}
+  function memberDue(m,year='all'){return Math.max(memberRequired(year)-memberPaid(m,year),0);}
+  function totalPaid(year='all'){
+    const target=year==='all'||!year?null:String(year);
+    return mainData.payments.filter(p=>target===null||String(p.year)===target).reduce((s,p)=>s+Number(p.paid_amount||0),0);
+  }
+  function totalDue(year='all'){
+    return Math.max(mainData.members.length*memberRequired(year)-totalPaid(year),0);
+  }
+  function totalProfit(year='all'){
+    const target=year==='all'||!year?null:Number(year);
+    return mainData.profits.filter(p=>target===null||Number(p.year)===target).reduce((s,p)=>s+Number(p.total_profit||0),0);
+  }
+  function totalExpense(year='all'){
+    const target=year==='all'||!year?null:Number(year);
+    return mainData.expenses.filter(p=>target===null||Number(p.year)===target).reduce((s,p)=>s+Number(p.amount||0),0);
+  }
+  function totalAssets(year='all'){
+    const target=year==='all'||!year?null:Number(year);
+    return mainData.assets.filter(p=>target===null||Number(p.year)===target).reduce((s,p)=>s+Number(p.amount||0),0);
+  }
+  function remainingFund(){return totalPaid('all')+totalProfit('all')-totalExpense('all');}
+  function remainingDividend(){return Math.max(totalProfit('all')-totalExpense('all'),0);}
+  function memberDividend(m){
+    const total=totalPaid('all'),remaining=remainingDividend();
+    if(total<=0||remaining<=0)return 0;
+    return remaining*(memberPaid(m,'all')/total);
+  }
+  async function getDividendPublic(memberId){
+    if(!mainSb)return false;
+    const {data,error}=await mainSb.from('member_dividend_visibility').select('is_public').eq('member_id',memberId).maybeSingle();
+    return !error && !!data?.is_public;
+  }
+  function memberRows(list){
+    return list.slice().sort((a,b)=>Number(a.serial_no||999999)-Number(b.serial_no||999999)).map((m,i)=>
+      `<tr><td>${Number(m.serial_no||i+1).toLocaleString('bn-BD')}</td><td class="name">${esc(m.name)}</td><td>${money(memberPaid(m,'all'))}</td><td>${money(memberDue(m,'all'))}</td></tr>`).join('');
+  }
+  function fillMemberReportSelectors(){
+    const ys=years();
+    const yEl=$('personalYear'), allY=$('allMembersYear'), memEl=$('personalMember');
+    if(yEl)yEl.innerHTML='<option value="">-- সাল নির্বাচন করুন --</option><option value="all">সকল বছর</option>'+ys.map(y=>`<option value="${esc(y)}">${esc(y)}</option>`).join('');
+    if(allY)allY.innerHTML='<option value="">-- সাল নির্বাচন করুন --</option><option value="all">সকল বছর</option>'+ys.map(y=>`<option value="${esc(y)}">${esc(y)}</option>`).join('');
+    if(memEl){
+      // Member account keeps the same selection-box UI, but only the logged-in member is selectable.
+      memEl.innerHTML=`<option value="${esc(currentMainMember.id)}">${esc(`${Number(currentMainMember.serial_no||'')||''}. ${currentMainMember.name}`.replace(/^\. /,''))}</option>`;
+      memEl.value=String(currentMainMember.id);
+    }
+  }
+  function renderPersonal(){
+    const y=$('personalYear')?.value,id=$('personalMember')?.value;
+    if(!$('personalResult'))return;
+    if(!y||!id){$('personalMessage').textContent='সাল ও সদস্য নির্বাচন করুন।';$('personalMessage').className='message error';return;}
+    const m=findMemberById(id);if(!m)return;
+    const detailYears=y==='all'?years():[String(y)];
+    const detailRows=detailYears.flatMap(yr=>months.map((monthName,idx)=>{
+      const paid=memberMonthPaid(m,yr,idx+1),due=Math.max(monthlyRequired-paid,0);
+      return `<tr><td>${esc(yr)}</td><td>${monthName}</td><td>${paid>0?money(paid):'৳ ০'}</td><td>${money(due)}</td></tr>`;
+    })).join('');
+    $('personalMessage').className='message hidden';
+    $('personalResult').innerHTML=`<div class="report-title"><h3>${esc(m.name)}</h3><p>${y==='all'?'সকল বছরের মোট হিসাব':`${esc(y)} সালের হিসাব`}</p></div>
+      <div class="table-wrap"><table><thead><tr><th>সাল</th><th>মাস</th><th>পরিশোধ</th><th>বাকি</th></tr></thead><tbody>${detailRows}</tbody></table></div>
+      <div class="summary-grid personal-total-summary"><article><span>মোট পরিশোধ</span><strong>${money(memberPaid(m,y))}</strong></article><article><span>মোট বাকি</span><strong>${money(memberDue(m,y))}</strong></article></div>`;
+  }
+  function renderAllMembers(){
+    const y=$('allMembersYear')?.value||'all';
+    if(!$('allMembersResult'))return;
+    if(!y){$('allMembersResult').innerHTML='<div class="empty-state">একটি বছর নির্বাচন করে হিসাব দেখুন।</div>';return;}
+    if(y==='all'){
+      let rows=mainData.members.map((m,i)=>`<tr><td>${Number(m.serial_no||i+1).toLocaleString('bn-BD')}</td><td class="name nowrap">${esc(m.name)}</td>${years().map(v=>`<td>${memberPaid(m,v)>0?Number(memberPaid(m,v)).toLocaleString('bn-BD'):''}</td>`).join('')}<td>${Number(memberPaid(m,'all')).toLocaleString('bn-BD')}</td><td>${Number(memberDue(m,'all')).toLocaleString('bn-BD')}</td></tr>`).join('');
+      $('allMembersResult').innerHTML=`<div class="report-title"><h3>সকল বছরের সকল সদস্যদের হিসাব</h3><p>যে মাসে টাকা দেওয়া হয়েছে শুধু সেই টাকাই দেখানো হয়েছে</p></div><div class="table-wrap"><table class="member-report-table"><thead><tr><th>ক্রমিক</th><th class="name">সদস্যের নাম</th>${years().map(v=>`<th>${esc(v)}</th>`).join('')}<th>মোট পরিশোধ</th><th>মোট বাকি</th></tr></thead><tbody>${rows}</tbody><tfoot><tr class="total-row"><td colspan="2">সর্বমোট</td>${years().map(v=>`<td>${totalPaid(v)>0?Number(totalPaid(v)).toLocaleString('bn-BD'):''}</td>`).join('')}<td>${Number(totalPaid('all')).toLocaleString('bn-BD')}</td><td>${Number(totalDue('all')).toLocaleString('bn-BD')}</td></tr></tfoot></table></div>`;
+      return;
+    }
+    const rows=mainData.members.map((m,i)=>`<tr><td>${Number(m.serial_no||i+1).toLocaleString('bn-BD')}</td><td class="name nowrap">${esc(m.name)}</td>${months.map((_,mi)=>{const p=memberMonthPaid(m,y,mi+1);return `<td>${p>0?Number(p).toLocaleString('bn-BD'):''}</td>`}).join('')}<td>${Number(memberPaid(m,y)).toLocaleString('bn-BD')}</td><td>${Number(memberDue(m,y)).toLocaleString('bn-BD')}</td></tr>`).join('');
+    $('allMembersResult').innerHTML=`<div class="report-title"><h3>${esc(y)} সালের সকল সদস্যদের হিসাব</h3><p>প্রতি মাসে শুধু পরিশোধের পরিমাণ দেখানো হয়েছে</p></div><div class="table-wrap"><table class="member-report-table"><thead><tr><th>ক্রমিক</th><th class="name">সদস্যের নাম</th>${months.map(m=>`<th>${m}</th>`).join('')}<th>মোট পরিশোধ</th><th>মোট বাকি</th></tr></thead><tbody>${rows}</tbody></table></div><div class="member-summary"><div>মোট পরিশোধ<strong>${money(totalPaid(y))}</strong></div><div>মোট বাকি<strong>${money(totalDue(y))}</strong></div></div>`;
+  }
+  function renderTotal(){
+    const deposit=totalPaid('all'),profit=totalProfit('all'),expense=totalExpense('all');
+    $('totalResult').innerHTML=`<div class="report-title"><h3>সংস্থার মোট হিসাব</h3><p>প্রতিষ্ঠার শুরু থেকে সকল বছরের সমন্বিত হিসাব</p></div><div class="summary-grid total-summary"><article><span>মোট জমা</span><strong>${money(deposit)}</strong></article><article><span>মোট লভ্যাংশ</span><strong>${money(profit)}</strong></article><article><span>মোট বিবিধ খরচ</span><strong>${money(expense)}</strong></article><article class="highlight"><span>অবশিষ্ট তহবিল</span><strong>${money(deposit+profit-expense)}</strong></article></div>`;
+  }
+  function renderProfitExpenseDetails(){
+    const profitRows=mainData.profits.slice().sort((a,b)=>Number(a.year)-Number(b.year)).map((x,i)=>`<tr><td>${i+1}</td><td>${esc(x.year)}</td><td class="detail-text">${esc(x.description||'-')}</td><td>${money(x.total_profit)}</td></tr>`).join('');
+    const expenseRows=mainData.expenses.slice().sort((a,b)=>Number(a.year||0)-Number(b.year||0)).map((x,i)=>`<tr><td>${i+1}</td><td>${esc(x.year)}</td><td class="detail-text">${esc(x.description||'-')}</td><td>${money(x.amount)}</td></tr>`).join('');
+    $('profitExpenseDetailsResult').innerHTML=`<div class="detail-block profit-detail"><div class="detail-heading"><span>📈</span><h3>লভ্যাংশের বিস্তারিত বিবরণ</h3></div><div class="table-wrap"><table class="detail-table"><thead><tr><th>ক্রমিক</th><th>সাল</th><th class="detail-text">বিবরণ</th><th>পরিমাণ</th></tr></thead><tbody>${profitRows||'<tr><td colspan="4">কোনো লভ্যাংশের তথ্য নেই।</td></tr>'}</tbody><tfoot><tr class="total-row"><td colspan="3">মোট লভ্যাংশ</td><td>${money(totalProfit('all'))}</td></tr></tfoot></table></div></div>
+      <div class="detail-block expense-detail"><div class="detail-heading"><span>🧾</span><h3>খরচের বিস্তারিত বিবরণ</h3></div><div class="table-wrap"><table class="detail-table"><thead><tr><th>ক্রমিক</th><th>সাল</th><th class="detail-text">বিবরণ</th><th>পরিমাণ</th></tr></thead><tbody>${expenseRows||'<tr><td colspan="4">কোনো খরচের তথ্য নেই।</td></tr>'}</tbody><tfoot><tr class="total-row"><td colspan="3">মোট খরচ</td><td>${money(totalExpense('all'))}</td></tr></tfoot></table></div></div>
+      <div class="detail-block dividend-summary-detail"><div class="detail-heading"><span>💰</span><h3>লভ্যাংশের সংক্ষিপ্ত হিসাব</h3></div><div class="table-wrap"><table class="detail-table fund-summary-table"><tbody><tr><th>মোট লভ্যাংশ</th><td>${money(totalProfit('all'))}</td></tr><tr><th>মোট খরচ</th><td>${money(totalExpense('all'))}</td></tr><tr class="highlight-row"><th>অবশিষ্ট লভ্যাংশ</th><td><b>${money(remainingDividend())}</b></td></tr></tbody></table></div></div>`;
+  }
+  function renderFund(){
+    const body=mainData.assets.map((a,i)=>`<tr><td>${i+1}</td><td>${esc(a.year)}</td><td>${esc(a.category)}</td><td class="detail-text">${esc(a.description)}</td><td>${money(a.amount)}</td><td>${esc(a.date||'')}</td></tr>`).join('');
+    $('fundResult').innerHTML=`<div class="report-title"><h3>তহবিল ব্যবহারের খাতসমূহ</h3><p>যে সকল খাতে তহবিল ব্যবহার করা হয়েছে</p></div><div class="detail-block fund-detail"><div class="detail-heading"><span>🏦</span><h3>তহবিল ব্যবহারের খাতসমূহ</h3></div><div class="table-wrap"><table class="detail-table"><thead><tr><th>ক্রমিক</th><th>সাল</th><th>খাত</th><th class="detail-text">বিস্তারিত</th><th>পরিমাণ</th><th>তারিখ</th></tr></thead><tbody>${body||'<tr><td colspan="6">এখনও কোনো খাত যোগ করা হয়নি।</td></tr>'}</tbody><tfoot><tr class="total-row"><td colspan="4">বিভিন্ন খাতে ব্যবহার করা মোট</td><td>${money(totalAssets('all'))}</td><td></td></tr></tfoot></table></div></div><div class="detail-block fund-summary-detail"><div class="detail-heading"><span>💰</span><h3>তহবিলের সংক্ষিপ্ত হিসাব</h3></div><div class="table-wrap"><table class="detail-table fund-summary-table"><tbody><tr><th>মোট অবশিষ্ট তহবিল</th><td>${money(remainingFund())}</td></tr><tr><th>বিভিন্ন খাতে ব্যবহার</th><td>${money(totalAssets('all'))}</td></tr><tr class="highlight-row"><th>বর্তমান অবশিষ্ট তহবিল</th><td><b>${money(remainingFund())}</b></td></tr></tbody></table></div></div>`;
+  }
+  function renderNotices(){
+    const html=mainData.notices.map(n=>`<article class="notice"><h3>${esc(n.title)}</h3><p>${esc(n.description)}</p><small>${esc(n.publish_date||'')}</small></article>`).join('');
+    $('noticeResult').innerHTML=html||'<div class="empty-state">কোনো প্রকাশিত নোটিশ নেই।</div>';
+  }
+  function showMemberView(view){
+    document.querySelectorAll('.member-view').forEach(s=>s.classList.toggle('active',s.id===view));
+    document.querySelectorAll('#memberMobileMenu a[data-member-view]').forEach(a=>a.classList.toggle('active',a.dataset.memberView===view));
+    setMemberMenu(false);
+    if(location.hash!=='#'+view) history.replaceState(null,'','#'+view);
+  }
   async function loadDashboard(){
+    fillMemberReportSelectors();
+    renderTotal();
+    renderProfitExpenseDetails();
+    renderFund();
+    renderNotices();
     const publicAll=await getVisibility();
-    $('personalSummary').innerHTML=`<article><span>সকল বছরের মোট পরিশোধ</span><strong>${money(calcPaid(currentMainMember,'all'))}</strong></article><article><span>সকল বছরের মোট বাকি</span><strong>${money(due(currentMainMember,'all'))}</strong></article><article><span>সদস্যের অবস্থা</span><strong>অনুমোদিত</strong></article>`;
-    $('personalAccount').innerHTML=`<div class="table-wrap"><table><thead><tr><th>সাল</th><th>পরিশোধ</th><th>বাকি</th></tr></thead><tbody>${personalRows(currentMainMember)||'<tr><td colspan="3">কোনো হিসাব পাওয়া যায়নি</td></tr>'}</tbody></table></div>`;
-    const approved=mainData.members.length;
-    const totalPaid=mainData.payments.reduce((s,p)=>s+Number(p.paid_amount||0),0);
-    const totalProfit=mainData.profits.reduce((s,p)=>s+Number(p.total_profit||0),0);
-    const totalExpense=mainData.expenses.reduce((s,p)=>s+Number(p.amount||0),0);
-    $('organizationSummary').innerHTML=`<div class="summary-grid"><article><span>সকল সদস্যের হিসাব</span><strong>${publicAll?'Public':'Hide'}</strong></article><article><span>সদস্য সংখ্যা</span><strong>${approved.toLocaleString('bn-BD')}</strong></article><article><span>মোট পরিশোধ</span><strong>${money(totalPaid)}</strong></article><article><span>মোট লভ্যাংশ</span><strong>${money(totalProfit)}</strong></article><article><span>মোট খরচ</span><strong>${money(totalExpense)}</strong></article></div>`;
-    const section=$('allMembersSection');section.hidden=!publicAll;
-    if(publicAll){$('allMembersAccount').innerHTML=`<div class="table-wrap"><table class="member-report-table"><thead><tr><th>ক্রমিক</th><th class="name">সদস্যের নাম</th><th>মোট পরিশোধ</th><th>মোট বাকি</th></tr></thead><tbody>${memberRows(mainData.members)}</tbody></table></div>`;}
+    const oldSummary=$('personalSummary'); if(oldSummary) oldSummary.innerHTML='';
+    const oldAll=$('allMembersSection'); if(oldAll) oldAll.remove();
+    // All members visibility follows the existing Public/Hide setting.
+    const allSection=$('members');
+    allSection.dataset.public=String(publicAll);
+    // Keep the section visible; if hidden by admin, explain the existing setting.
+    if(!publicAll){
+      const result=$('allMembersResult');
+      result.innerHTML='<div class="empty-state">সকল সদস্যদের হিসাব বর্তমানে Public করা হয়নি।</div>';
+    }
+    const divPublic=await getDividendPublic(currentMainMember.id);
+    const divNote=divPublic?'':'';
+    const y=$('personalYear'); if(y)y.value='all';
+    const pm=$('personalMember'); if(pm)pm.value=String(currentMainMember.id);
+    renderPersonal();
+    const hash=location.hash.replace('#','');
+    showMemberView(['personal','members','due','profitExpenseDetails','fund','notices'].includes(hash)?hash:'personal');
   }
   async function logout(){if(sb)await sb.auth.signOut();currentProfile=null;currentMainMember=null;showOnly('auth');showChooser();}
   async function adminLogin(e){
@@ -256,13 +378,16 @@ function findMemberById(id){return mainData.members.find(m=>String(m.id)===Strin
   $('memberMenuOverlay').onclick=()=>setMemberMenu(false);
   document.querySelectorAll('#memberMobileMenu a').forEach(a=>a.addEventListener('click',()=>setMemberMenu(false)));
   $('memberMenuLogout').onclick=e=>{e.preventDefault();logout();};
+  document.querySelectorAll('#memberMobileMenu a[data-member-view]').forEach(a=>a.addEventListener('click',e=>{e.preventDefault();showMemberView(a.dataset.memberView);}));
+  window.addEventListener('hashchange',()=>{const v=location.hash.replace('#','');if(['personal','members','due','profitExpenseDetails','fund','notices'].includes(v)&&!$('dashboard').hidden)showMemberView(v);});
+  $('personalForm').onsubmit=e=>{e.preventDefault();renderPersonal();};
+  $('membersForm').onsubmit=e=>{e.preventDefault();renderAllMembers();};
   $('openMemberLogin').onclick=()=>openAuthPanel('login');
   $('openMemberSignup').onclick=()=>openAuthPanel('signup');
   $('loginBack').onclick=showChooser;
   $('signupBack').onclick=showChooser;
   $('loginToSignup').onclick=()=>openAuthPanel('signup');
   $('signupToLogin').onclick=()=>openAuthPanel('login');
-  $('signupForm').onsubmit=signUp;$('loginForm').onsubmit=signIn;$('memberLogout').onclick=logout;$('pendingLogout').onclick=logout;$('adminLoginForm').onsubmit=adminLogin;$('footerYear').textContent=new Date().getFullYear();
-  if(location.hash==='#admin')$('adminPanel').hidden=false; else $('adminPanel').hidden=true; showChooser();
+  $('signupForm').onsubmit=signUp;$('loginForm').onsubmit=signIn;$('memberLogout').onclick=logout;$('pendingLogout').onclick=logout;$('footerYear').textContent=new Date().getFullYear();showChooser();
   if(!sb||!mainSb){msg('প্রয়োজনীয় Supabase configuration পাওয়া যায়নি।',false);}else {loadSelectableMembers();loadSession();}
 })();
