@@ -267,5 +267,3 @@ footer{background:#076f45;color:#fff;text-align:center;padding:24px 0;font-size:
 .dividend-status.hidden{color:#a52222}
 .admin-profit-ledger{margin-top:16px}
 @media(max-width:700px){.dividend-summary-grid{grid-template-columns:1fr}.dividend-global-actions{flex-direction:column}.dividend-global-actions button{width:100%;padding:10px 8px}}
-
-.auth-gate{max-width:560px;margin:32px auto;text-align:center}.auth-gate .section-title{text-align:left}.gate-actions{display:grid;grid-template-columns:1fr;gap:12px;margin-top:20px}.gate-actions .btn{text-decoration:none;text-align:center;min-height:50px;display:flex;align-items:center;justify-content:center}.auth-gate .login-card{margin-top:18px;text-align:left}.login-heading{display:flex;gap:10px;align-items:flex-start;margin-bottom:16px}.login-heading>span{font-size:28px}.login-heading h3{margin:0 0 4px}.login-heading p{margin:0}.gate-actions .btn-light{border:1px solid #9ed2ba;background:#fbfdfc}@media(max-width:560px){.gate-actions{grid-template-columns:1fr}}

@@ -41,6 +41,3 @@ FINAL v7 সংশোধন:
 - সকল বছর selector-এ স্থির ক্রম 2021, 2022, 2023, 2024।
 - 2025 কোনো পুরোনো রেকর্ডে থাকলে display/filter হিসাবের সময় 2024 হিসেবে গণনা হবে।
 - Print/PDF header-এ প্রথমে বড় করে সংস্থার নাম, তার নিচে ছোট করে ঠিকানা, তারপর রিপোর্ট শিরোনাম থাকবে।
-
-
-V2 CONFIGURED: নতুন Supabase project URL/key বসানো হয়েছে। Phone login চালাতে Supabase Auth > Phone Provider এবং SMS provider (যেমন Twilio) আলাদাভাবে সক্রিয় করতে হবে। কোনো password database-এ plaintext/hash হিসেবে এই website code-এ রাখা হয়নি।
