@@ -7,7 +7,7 @@
   const normalizeMobile=v=>String(v||'').replace(/[\s-]/g,'');
   // Phone Auth is disabled in this Supabase project. We keep the user's mobile
   // number as the login identifier, but use a deterministic internal email for Auth.
-  const authEmailFromMemberId=id=>`member-${String(id)}@member.al-ikhwan.local`;
+  const authEmailFromMemberId=id=>`member-${String(id)}@member.al-ikhwanbd.github.io`;
   let selectableMembers=[];
   const memberReady=window.MEMBER_SUPABASE_URL&&window.MEMBER_SUPABASE_ANON_KEY&&window.supabase;
   const mainReady=window.MAIN_SUPABASE_URL&&window.MAIN_SUPABASE_ANON_KEY&&window.supabase;
