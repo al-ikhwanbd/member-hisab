@@ -1,5 +1,9 @@
 const sb=(window.supabase&&window.SUPABASE_URL&&window.SUPABASE_ANON_KEY)
   ?window.supabase.createClient(window.SUPABASE_URL,window.SUPABASE_ANON_KEY):null;
+// Admin authentication is intentionally kept in the Member Auth project,
+// while the existing Hisab data continues to use the main project above.
+const memberSb=(window.supabase&&window.MEMBER_SUPABASE_URL&&window.MEMBER_SUPABASE_ANON_KEY)
+  ?window.supabase.createClient(window.MEMBER_SUPABASE_URL,window.MEMBER_SUPABASE_ANON_KEY):null;
 
 const months=['জানুয়ারি','ফেব্রুয়ারি','মার্চ','এপ্রিল','মে','জুন','জুলাই','আগস্ট','সেপ্টেম্বর','অক্টোবর','নভেম্বর','ডিসেম্বর'];
 const money=n=>`৳ ${Number(n||0).toLocaleString('bn-BD')}`;
@@ -377,9 +381,30 @@ function renderAdminData(){
   q('adminAssets').innerHTML=`<table><thead><tr><th>বছর</th><th>খাত</th><th class="name">বিবরণ</th><th>পরিমাণ</th><th>অ্যাকশন</th></tr></thead><tbody>`+assets.map(x=>`<tr><td>${esc(x.year)}</td><td>${esc(x.category)}</td><td class="name">${esc(x.description)}</td><td>${money(x.amount)}</td><td class="row-actions"><button class="small-btn edit" onclick="editAsset('${esc(x.id)}')">Edit</button><button class="small-btn del" onclick="del('assets','${esc(x.id)}')">Delete</button></td></tr>`).join('')+`</tbody></table>`;
   q('adminNotices').innerHTML=`<table><thead><tr><th>শিরোনাম</th><th class="name">বিবরণ</th><th>তারিখ</th><th>অ্যাকশন</th></tr></thead><tbody>`+notices.map(x=>`<tr><td>${esc(x.title)}</td><td class="name">${esc(x.description)}</td><td>${esc(x.publish_date||'')}</td><td class="row-actions"><button class="small-btn edit" onclick="editNotice('${esc(x.id)}')">Edit</button><button class="small-btn del" onclick="del('notices','${esc(x.id)}')">Delete</button></td></tr>`).join('')+`</tbody></table>`;
 }
-async function checkAdmin(){if(!sb)return;const {data:{session}}=await sb.auth.getSession();adminUser=session?.user||null;if(!adminUser){q('loginBox').hidden=false;q('adminBox').hidden=true;return}const {data,error}=await sb.from('admin_users').select('user_id').eq('user_id',adminUser.id).maybeSingle();if(error||!data){q('loginBox').hidden=false;q('adminBox').hidden=true;q('loginMsg').textContent='এই অ্যাকাউন্টে অ্যাডমিন অনুমতি নেই।';return}q('loginBox').hidden=true;q('adminBox').hidden=false;q('adminUser').textContent=adminUser.email||'Admin';loadDividendVisibility().then(()=>renderAdminData())}
-async function login(){if(!sb){showMessage('Supabase configuration পাওয়া যায়নি।',false,'loginMsg');return}showMessage('লগইন হচ্ছে...',true,'loginMsg');const {error}=await sb.auth.signInWithPassword({email:q('adminEmail').value.trim(),password:q('adminPassword').value});if(error){showMessage(error.message,false,'loginMsg');return}await checkAdmin();q('adminPassword').value=''}
-async function logout(){await sb.auth.signOut();location.hash='admin';location.reload()}
+async function checkAdmin(){
+  if(!memberSb){q('loginBox').hidden=false;q('adminBox').hidden=true;q('loginMsg').textContent='Admin authentication configuration পাওয়া যায়নি।';return}
+  const {data:{session}}=await memberSb.auth.getSession();
+  adminUser=session?.user||null;
+  if(!adminUser){q('loginBox').hidden=false;q('adminBox').hidden=true;return}
+  const {data,error}=await memberSb.from('member_admins').select('user_id').eq('user_id',adminUser.id).maybeSingle();
+  if(error||!data){
+    await memberSb.auth.signOut();
+    q('loginBox').hidden=false;q('adminBox').hidden=true;
+    q('loginMsg').textContent=error?'Admin permission যাচাই করা যায়নি।':'এই অ্যাকাউন্টে অ্যাডমিন অনুমতি নেই।';
+    return
+  }
+  q('loginBox').hidden=true;q('adminBox').hidden=false;q('adminUser').textContent=adminUser.email||'Admin';
+  loadDividendVisibility().then(()=>renderAdminData())
+}
+async function login(){
+  if(!memberSb){showMessage('Admin authentication configuration পাওয়া যায়নি।',false,'loginMsg');return}
+  showMessage('লগইন হচ্ছে...',true,'loginMsg');
+  const {error}=await memberSb.auth.signInWithPassword({email:q('adminEmail').value.trim(),password:q('adminPassword').value});
+  if(error){showMessage(error.message,false,'loginMsg');return}
+  await checkAdmin();
+  q('adminPassword').value=''
+}
+async function logout(){if(memberSb)await memberSb.auth.signOut();if(sb)await sb.auth.signOut();location.hash='admin';location.reload()}
 function openForm(name){document.querySelectorAll('.admin-form').forEach(f=>f.classList.remove('active'));const f=q(name+'Form');if(f)f.classList.add('active')}
 function openManagement(name){document.querySelectorAll('.admin-data').forEach(x=>x.classList.remove('active'));q('managementArea').style.display='block';const target=q('manage'+name.charAt(0).toUpperCase()+name.slice(1));if(target)target.classList.add('active');if(name==='payments'||name==='profits'||name==='dividendVisibility')renderAdminData()}
 function setMenu(open){const menu=q('mobileMenu'),overlay=q('menuOverlay'),btn=q('menuBtn');menu.classList.toggle('open',open);overlay.classList.toggle('show',open);btn.setAttribute('aria-expanded',String(open));document.body.classList.toggle('menu-open',open)}
