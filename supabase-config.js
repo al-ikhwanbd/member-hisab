@@ -1,5 +1,6 @@
 // Supabase frontend configuration
-// এখানে শুধু Project URL এবং Publishable/Anon Key রাখবেন।
-// কখনো service_role / secret key এখানে দেবেন না.
-window.SUPABASE_URL = 'https://pgauqrvplyqxtsfntgnk.supabase.co';
-window.SUPABASE_ANON_KEY = 'sb_publishable_D2u6dQqcK3NJTfvKNqaVgw_rsH9_cSY';
+// Al-Ikhwan Member Hisab — NEW project only
+// Never place a service_role / secret key here.
+
+window.SUPABASE_URL = 'https://voentiynlvljtqfzjjgn.supabase.co';
+window.SUPABASE_ANON_KEY = 'sb_publishable_Yl0CXmLwWcizeiLmimz0bg__WtQR2tJ';
