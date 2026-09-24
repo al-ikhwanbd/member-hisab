@@ -11,7 +11,7 @@
 <title>আল ইখওয়ান ইসলামী সংস্থা বাংলাদেশ — হিসাব</title>
 <link rel="stylesheet" href="style.css?v=44">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-</head>
+<style>#menuBtn{display:none}#appShell[style*="block"] ~ *{} #accessGate{max-width:520px;margin:28px auto 40px;padding:0 12px}#appShell{display:none}.access-card{background:#fff;border:1px solid #d6e3de;border-radius:14px;padding:20px;box-shadow:0 8px 24px rgba(0,0,0,.06)}.access-card h2{margin:0 0 6px}.access-card p{color:#64736e;margin:0 0 16px}.access-actions{display:grid;gap:10px}.access-actions .btn{width:100%}.access-panel{margin-top:14px}.access-panel[hidden]{display:none!important}.access-panel input,.access-panel select,.access-panel textarea{width:100%;box-sizing:border-box;margin:6px 0 10px;padding:11px;border:1px solid #cbd9d4;border-radius:8px}.member-mode #mobileMenu [data-view="admin"],.member-mode #admin{display:none!important}</style></head>
 <body>
 <header class="top-header">
   <div class="nav container">
@@ -44,11 +44,10 @@
   <a href="#fund" data-view="fund"><span>💰</span>অবশিষ্ট তহবিলের খাত</a>
   <a href="#notices" data-view="notices"><span>📢</span>নোটিশ</a>
   <a href="#admin" data-view="admin"><span>🔐</span>এডমিন প্যানেল</a>
-  <a href="member.html#admin"><span>📝</span>নতুন সদস্য অনুমোদন</a>
-  <a href="member.html"><span>🧑‍💻</span>মেম্বার লগইন / অ্যাকাউন্ট</a>
 </nav>
 
-<main class="container main">
+<section id="accessGate" aria-label="লগইন"><div class="access-card"><h2>🔐 হিসাব দেখতে লগইন করুন</h2><p>হিসাবের তথ্য দেখতে আগে সদস্য অথবা অ্যাডমিন হিসেবে লগইন করতে হবে।</p><div id="accessChooser" class="access-actions"><button class="btn btn-primary" id="chooseMemberLogin" type="button">👤 সদস্য লগইন</button><button class="btn btn-light" id="chooseAdminLogin" type="button">🔐 এডমিন লগইন</button></div><div id="memberAccessPanel" class="access-panel" hidden><form id="memberLoginForm"><label>সদস্যের নাম <b>*</b><select id="accessMember" required><option value="">-- সদস্যের নাম নির্বাচন করুন --</option></select></label><label>পাসওয়ার্ড <b>*</b><input id="accessPassword" type="password" required></label><button class="btn btn-primary full" type="submit">🔐 সদস্য লগইন</button></form><button class="btn btn-light full" id="showSignup" type="button">📝 নতুন সদস্য সাইন আপ</button><div id="memberAccessMsg" class="message"></div></div><div id="memberSignupPanel" class="access-panel" hidden><form id="memberSignupForm"><label>সদস্যের নাম <b>*</b><select id="accessSignupMember" required><option value="">-- সদস্যের নাম নির্বাচন করুন --</option></select></label><label>ঠিকানা <b>*</b><textarea id="accessAddress" required minlength="2"></textarea></label><label>মোবাইল নম্বর <b>*</b><input id="accessMobile" inputmode="tel"></label><label>পাসওয়ার্ড <b>*</b><input id="accessSignupPassword" type="password" required minlength="6"></label><button class="btn btn-primary full" type="submit">📝 অ্যাকাউন্ট তৈরি করুন</button></form><button class="btn btn-light full" id="backToMemberLogin" type="button">← সদস্য লগইনে ফিরে যান</button><div id="memberSignupMsg" class="message"></div></div><div id="adminAccessPanel" class="access-panel" hidden><label>অ্যাডমিন ইমেইল<input id="gateAdminEmail" type="email"></label><label>পাসওয়ার্ড<input id="gateAdminPassword" type="password"></label><button class="btn btn-primary full" id="gateAdminLogin" type="button">🔐 এডমিন লগইন</button><div id="adminAccessMsg" class="message"></div></div></div></section>
+<div id="appShell"><main class="container main">
   <section id="personal" class="result-card page-section">
     <div class="section-title">
       <span class="title-icon">👤</span>
@@ -166,8 +165,8 @@
 
 <footer>
   <div class="container">© <span id="footerYear"></span> আল ইখওয়ান ইসলামী সংস্থা বাংলাদেশ<div class="footer-sub">সকল অধিকার সংরক্ষিত</div></div>
-</footer>
+</footer></div>
 <script src="supabase-config.js"></script>
-<script src="script.js?v=45"></script>
+<script src="member-auth-config.js?v=1"></script><script src="access-gate.js?v=1"></script><script src="script.js?v=45"></script>
 </body>
 </html>
