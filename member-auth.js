@@ -76,9 +76,23 @@ function findMemberById(id){return mainData.members.find(m=>String(m.id)===Strin
   }
   async function loadMainData(onlyMember=null){
     if(!mainSb) throw new Error('মূল হিসাবের Supabase configuration পাওয়া যায়নি।');
+    // Main হিসাবের মতোই payments-এর সব row page করে নেওয়া হচ্ছে।
+    // Supabase-এর default 1000-row limit-এর কারণে Member Dashboard-এ
+    // পুরোনো/পরের payment বাদ পড়ে Main হিসাবের সঙ্গে mismatch হচ্ছিল।
+    const fetchAllPayments=async()=>{
+      const rows=[];
+      const pageSize=1000;
+      for(let from=0;;from+=pageSize){
+        const {data,error}=await mainSb.from('payments').select('*').order('year').order('month').range(from,from+pageSize-1);
+        if(error) return {data:null,error};
+        rows.push(...(data||[]));
+        if(!data || data.length<pageSize) break;
+      }
+      return {data:rows,error:null};
+    };
     const [m,p,pr,e]=await Promise.all([
       mainSb.from('members').select('*').eq('status','active').order('serial_no',{ascending:true,nullsFirst:false}).order('created_at'),
-      mainSb.from('payments').select('*').order('year').order('month'),
+      fetchAllPayments(),
       mainSb.from('profits').select('*').order('year'),
       mainSb.from('expenses').select('*').order('date',{ascending:false})
     ]);
