@@ -9,7 +9,7 @@
 <link rel="apple-touch-icon" href="icon-192.png?v=2">
 <link rel="manifest" href="manifest.json?v=2">
 <title>আল ইখওয়ান ইসলামী সংস্থা বাংলাদেশ — হিসাব</title>
-<link rel="stylesheet" href="style.css?v=44">
+<link rel="stylesheet" href="style.css?v=45">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
@@ -35,13 +35,13 @@
 <section id="authGate" class="result-card auth-gate">
   <div class="section-title"><span class="title-icon">🔐</span><div><h2>প্রবেশ করুন</h2><p>হিসাব দেখতে আগে এডমিন অথবা মেম্বার হিসেবে লগইন করুন।</p></div></div>
   <div class="gate-actions">
-    <button type="button" class="btn btn-primary" id="gateAdminBtn">🔐 এডমিন লগইন</button>
-    <a class="btn btn-light" href="member.html">🧑‍💻 মেম্বার লগইন / সাইন আপ</a>
+    <button type="button" class="btn btn-primary" id="gateAdminBtn">🔐 Admin Login</button>
+    <a class="btn btn-light" href="member.html">🧑‍💻 Member Login</a>
   </div>
   <div id="gateLoginBox" class="login-card" hidden>
-    <h3>এডমিন লগইন</h3><p class="muted">অনুমোদিত এডমিন ইমেইল ও পাসওয়ার্ড দিয়ে প্রবেশ করুন।</p>
-    <div class="login-fields"><input id="gateAdminEmail" type="email" autocomplete="username" placeholder="ইমেইল"><input id="gateAdminPassword" type="password" autocomplete="current-password" placeholder="পাসওয়ার্ড"></div>
-    <button class="btn btn-primary full" id="gateLoginBtn">🔐 লগইন</button><div id="gateLoginMsg" class="message"></div>
+    <div class="login-heading"><span>🔐</span><div><h3>Admin Login</h3><p class="muted">Admin ইমেইল ও পাসওয়ার্ড দিয়ে লগইন করুন।</p></div></div>
+    <div class="login-fields"><input id="gateAdminEmail" type="email" autocomplete="username" placeholder="Admin Email"><input id="gateAdminPassword" type="password" autocomplete="current-password" placeholder="Password"></div>
+    <button class="btn btn-primary full" id="gateLoginBtn">🔐 Admin Login</button><div id="gateLoginMsg" class="message"></div>
   </div>
 </section>
 

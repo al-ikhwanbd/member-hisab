@@ -7,8 +7,8 @@
 <meta name="description" content="আল ইখওয়ান ইসলামী সংস্থা বাংলাদেশের সদস্য অ্যাকাউন্ট">
 <link rel="icon" type="image/png" href="favicon.png">
 <link rel="apple-touch-icon" href="icon-192.png">
-<link rel="stylesheet" href="style.css?v=44">
-<link rel="stylesheet" href="member-auth.css?v=2">
+<link rel="stylesheet" href="style.css?v=45">
+<link rel="stylesheet" href="member-auth.css?v=3">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <title>সদস্য অ্যাকাউন্ট — আল ইখওয়ান ইসলামী সংস্থা বাংলাদেশ</title>
 </head>
@@ -20,23 +20,25 @@
       <div class="brand-text"><strong>আল ইখওয়ান ইসলামী সংস্থা বাংলাদেশ</strong><span>সদস্য অ্যাকাউন্ট</span></div>
     </a>
   </div>
-  <div class="hero"><div class="container"><h1>সদস্য অ্যাকাউন্ট</h1><p>নাম, ঠিকানা ও মোবাইল নম্বর দিয়ে অ্যাকাউন্ট তৈরি করুন</p></div></div>
+  <div class="hero"><div class="container"><h1>সদস্য অ্যাকাউন্ট</h1><p>শুধু মোবাইল নম্বর দিয়ে সদস্য অ্যাকাউন্ট তৈরি করুন</p></div></div>
 </header>
 <main class="container main member-main">
   <section id="authCard" class="result-card member-card">
-    <div class="section-title"><span class="title-icon">👤</span><div><h2 id="authTitle">সদস্য অ্যাকাউন্ট তৈরি</h2><p id="authSubtitle">অ্যাকাউন্ট তৈরি করার পর অ্যাডমিন অনুমোদন করবেন।</p></div></div>
-    <div class="member-tabs"><button id="showSignup" class="member-tab active">নতুন অ্যাকাউন্ট</button><button id="showLogin" class="member-tab">লগইন</button></div>
-    <form id="signupForm" class="member-form">
+    <div class="section-title"><span class="title-icon">👤</span><div><h2 id="authTitle">সদস্য লগইন</h2><p id="authSubtitle">মোবাইল নম্বর ও পাসওয়ার্ড দিয়ে সহজে সদস্য অ্যাকাউন্টে প্রবেশ করুন।</p></div></div>
+    <form id="loginForm" class="member-form">
+      <label>মোবাইল নম্বর <b>*</b><input id="loginMobile" name="mobile" inputmode="tel" autocomplete="tel" placeholder="01XXXXXXXXX"></label>
+      <label>পাসওয়ার্ড <b>*</b><input name="password" required type="password" autocomplete="current-password" placeholder="পাসওয়ার্ড"></label>
+      <button class="btn btn-primary full" type="submit">🔐 সদস্য লগইন</button>
+    </form>
+    <div class="signup-divider"><span>নতুন সদস্য?</span></div>
+    <button id="showSignup" class="btn btn-light full signup-open" type="button">📝 Sign Up / নতুন অ্যাকাউন্ট তৈরি</button>
+    <form id="signupForm" class="member-form" hidden>
       <label>পূর্ণ নাম <b>*</b><input name="full_name" required minlength="2" autocomplete="name" placeholder="আপনার নাম"></label>
       <label>ঠিকানা <b>*</b><textarea name="address" required minlength="2" autocomplete="street-address" placeholder="আপনার ঠিকানা"></textarea></label>
-      <label>মোবাইল নম্বর <b>*</b><input name="mobile" required inputmode="tel" autocomplete="tel" placeholder="01XXXXXXXXX"></label>
+      <label>মোবাইল নম্বর <b>*</b><input id="signupMobile" name="mobile" inputmode="tel" autocomplete="tel" placeholder="01XXXXXXXXX"></label>
       <label>পাসওয়ার্ড <b>*</b><input name="password" required type="password" minlength="6" autocomplete="new-password" placeholder="কমপক্ষে ৬ অক্ষর"></label>
       <button class="btn btn-primary full" type="submit">📝 অ্যাকাউন্ট তৈরি করুন</button>
-    </form>
-    <form id="loginForm" class="member-form" hidden>
-      <label>মোবাইল নম্বর <b>*</b><input name="mobile" required inputmode="tel" autocomplete="tel" placeholder="01XXXXXXXXX"></label>
-      <label>পাসওয়ার্ড <b>*</b><input name="password" required type="password" autocomplete="current-password" placeholder="পাসওয়ার্ড"></label>
-      <button class="btn btn-primary full" type="submit">🔐 লগইন</button>
+      <button id="backToLogin" class="btn btn-light full" type="button" hidden>← সদস্য লগইনে ফিরে যান</button>
     </form>
     <div id="authMsg" class="message"></div>
   </section>
@@ -72,6 +74,6 @@
 </main>
 <footer><div class="container">© <span id="footerYear"></span> আল ইখওয়ান ইসলামী সংস্থা বাংলাদেশ<div class="footer-sub">সদস্য অ্যাকাউন্ট</div></div></footer>
 <script src="member-auth-config.js?v=3"></script>
-<script src="member-auth.js?v=4"></script>
+<script src="member-auth.js?v=5"></script>
 </body>
 </html>

@@ -32,3 +32,16 @@ GitHub Pages deploy হওয়ার পর member.html-এ `member-auth.js?v=3` 
 সদস্য যে কোনো বৈধ ১১ সংখ্যার মোবাইল নম্বর দিয়ে Sign Up করতে পারবে। Admin Pending account-এর পাশে মূল হিসাবের সদস্যের নাম নির্বাচন করে **যুক্ত করুন ও অনুমোদন** করবেন। এতে Sign Up-এর মোবাইল নম্বরই login নম্বর থাকবে, আর হিসাব কোন মূল সদস্যের হবে তা আলাদা link table-এ সংরক্ষিত হবে।
 
 একবার `member-account-linking.sql` Member Supabase project-এ চালাতে হবে।
+
+## নতুন: ইমেইল অথবা ফোন—দুইভাবেই Member Account
+
+Member Login পেজে এখন:
+- ফোন নম্বর দিয়ে Login/Sign Up করা যাবে
+- ইমেইল দিয়ে Login/Sign Up করা যাবে
+- Sign Up-এর পর account `pending` থাকবে
+- Admin যাচাই করে মূল সদস্য নির্বাচন করে অনুমোদন করবেন
+
+### গুরুত্বপূর্ণ Supabase সেটিং
+ফোন নম্বর দিয়ে account-এর জন্য এই সিস্টেম Supabase Auth-এর ভিতরে একটি internal email identifier ব্যবহার করে। তাই Member Supabase project-এর Authentication → Providers → Email-এ **Confirm email বন্ধ (OFF)** রাখতে হবে। Email provider চালু থাকবে।
+
+`member-account-linking.sql`-এর নতুন অংশটি চালিয়ে `member_profiles.email` column ও unique index তৈরি করতে হবে। আগের linking SQL ইতিমধ্যে চালানো থাকলেও এই নতুন অংশটি একবার চালানো নিরাপদ।
