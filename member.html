@@ -28,15 +28,13 @@
   <button class="menu-close" id="memberMenuClose" aria-label="মেনু বন্ধ করুন">×</button>
   <div class="drawer-logo"><img src="Al ikhwan logo.jpg" alt="আল ইখওয়ান ইসলামী সংস্থার লোগো"></div>
   <div class="drawer-title">মেইন মেনু</div>
-  <a href="#dashboard" data-member-view="dashboard"><span>👤</span>সদস্যদের ব্যক্তিগত হিসাব</a>
-  <a href="#allMembersSection" data-member-view="all"><span>👥</span>সকল সদস্যদের হিসাব</a>
-  <a href="#organizationSummary" data-member-view="org"><span>📊</span>সংস্থার মোট হিসাব</a>
-  <a href="#dashboard"><span>📋</span>লভ্যাংশ ও খরচের বিবরণ</a>
-  <a href="#dashboard"><span>💰</span>অবশিষ্ট তহবিলের খাত</a>
-  <a href="#dashboard"><span>📢</span>নোটিশ</a>
-  <a href="#admin"><span>🔐</span>এডমিন প্যানেল</a>
+  <a href="#memberPersonalSection" data-member-view="personal"><span>👤</span>সদস্যদের ব্যক্তিগত হিসাব</a>
+  <a href="#memberAllSection" data-member-view="all"><span>👥</span>সকল সদস্যদের হিসাব</a>
+  <a href="#memberTotalSection" data-member-view="total"><span>📊</span>সংস্থার মোট হিসাব</a>
+  <a href="#memberProfitSection"><span>📋</span>লভ্যাংশ ও খরচের বিবরণ</a>
+  <a href="#memberFundSection"><span>💰</span>অবশিষ্ট তহবিলের খাত</a>
+  <a href="#memberNoticeSection"><span>📢</span>নোটিশ</a>
   <a href="index.html"><span>🏠</span>মূল পেজ</a>
-  <a href="#" id="memberMenuLogout"><span>🚪</span>লগআউট</a>
 </nav>
 <main class="container main member-main">
   <section id="authCard" class="result-card member-card">
@@ -73,22 +71,53 @@
   </section>
 
   <section id="pendingCard" class="result-card member-card" hidden>
-    <div class="status-box pending"><div class="status-icon">⏳</div><h2>অ্যাডমিন অনুমোদনের অপেক্ষায়</h2><p>আপনার অ্যাকাউন্ট তৈরি হয়েছে। অ্যাডমিন অনুমোদন করার পর আপনি আপনার ব্যক্তিগত হিসাব দেখতে পারবেন।</p><button id="pendingLogout" class="btn btn-light">লগআউট</button></div>
+    <div class="status-box pending"><div class="status-icon">⏳</div><h2>অ্যাডমিন অনুমোদনের অপেক্ষায়</h2><p>আপনার অ্যাকাউন্ট তৈরি হয়েছে। অ্যাডমিন অনুমোদন করার পর আপনি আপনার ব্যক্তিগত হিসাব দেখতে পারবেন।</p></div>
   </section>
 
   <section id="dashboard" class="result-card member-card" hidden>
-    <div class="member-dashboard-head"><div><div class="eyebrow">সদস্য অ্যাকাউন্ট</div><h2 id="memberName">—</h2><p id="memberMobile">—</p></div><button id="memberLogout" class="btn danger">লগআউট</button></div>
+    <div class="member-dashboard-head"><div><div class="eyebrow">সদস্য অ্যাকাউন্ট</div><h2 id="memberName">—</h2><p id="memberMobile">—</p></div></div>
     <div id="memberProfile" class="profile-grid"></div>
-    <div id="personalSummary" class="summary-grid member-summary"></div>
-    <div class="section-title compact"><span class="title-icon">📊</span><div><h2>ব্যক্তিগত হিসাব</h2><p>সকল বছরের হিসাব ও মাসভিত্তিক তথ্য</p></div></div>
-    <div id="personalAccount" class="report-output"><div class="loading">হিসাব লোড হচ্ছে...</div></div>
-    <div id="allMembersSection" hidden>
-      <div class="section-title compact"><span class="title-icon">👥</span><div><h2>সকল সদস্যের হিসাব</h2><p>অ্যাডমিন Public করলে সকল অনুমোদিত সদস্যের হিসাব এখানে দেখা যাবে</p></div></div>
-      <div id="allMembersAccount" class="report-output"></div>
-    </div>
-    <div class="section-title compact"><span class="title-icon">🏦</span><div><h2>সংস্থার সামগ্রিক তথ্য</h2><p>সদস্য হিসেবে যে তথ্যগুলো সবার জন্য উন্মুক্ত</p></div></div>
-    <div id="organizationSummary" class="report-output"><div class="loading">তথ্য লোড হচ্ছে...</div></div>
+
+    <section id="memberPersonalSection" class="member-subsection">
+      <div class="section-title compact"><span class="title-icon">👤</span><div><h2>সদস্যদের ব্যক্তিগত হিসাব</h2><p>সাল নির্বাচন করে আপনার ব্যক্তিগত হিসাব দেখুন</p></div></div>
+      <div class="field"><label for="memberPersonalYear">সাল নির্বাচন করুন <b>*</b></label><select id="memberPersonalYear"><option value="">-- সাল নির্বাচন করুন --</option></select></div>
+      <div class="actions single-action"><button type="button" class="btn btn-primary" id="memberPersonalSearch">অনুসন্ধান করুন</button></div>
+      <div id="personalSummary" class="summary-grid member-summary"></div>
+      <div id="personalAccount" class="report-output"><div class="loading">হিসাব লোড হচ্ছে...</div></div>
+    </section>
+
+    <section id="memberAllSection" class="member-subsection">
+      <div class="section-title compact"><span class="title-icon">👥</span><div><h2>সকল সদস্যদের হিসাব</h2><p>অ্যাডমিন Public করলে নির্বাচিত বছরের সকল সদস্যের হিসাব দেখা যাবে</p></div></div>
+      <div id="allMembersSection" hidden>
+        <div class="field"><label for="memberAllYear">সাল নির্বাচন করুন <b>*</b></label><select id="memberAllYear"><option value="">-- সাল নির্বাচন করুন --</option></select></div>
+        <div class="actions single-action"><button type="button" class="btn btn-primary" id="memberAllSearch">হিসাব দেখুন</button></div>
+        <div id="allMembersAccount" class="report-output"></div>
+      </div>
+      <div id="allMembersHiddenMsg" class="empty-state">সকল সদস্যদের হিসাব বর্তমানে প্রকাশ করা হয়নি।</div>
+    </section>
+
+    <section id="memberTotalSection" class="member-subsection">
+      <div class="section-title compact"><span class="title-icon">📊</span><div><h2>সংস্থার মোট হিসাব</h2><p>প্রতিষ্ঠার শুরু থেকে সকল বছরের সমন্বিত হিসাব</p></div></div>
+      <div id="memberTotalAccount" class="report-output"></div>
+    </section>
+
+    <section id="memberProfitSection" class="member-subsection">
+      <div class="section-title compact"><span class="title-icon">📋</span><div><h2>লভ্যাংশ ও খরচের বিবরণ</h2><p>লভ্যাংশ ও বিবিধ খরচের বিস্তারিত হিসাব</p></div></div>
+      <div id="memberProfitAccount" class="report-output"></div>
+    </section>
+
+    <section id="memberFundSection" class="member-subsection">
+      <div class="section-title compact"><span class="title-icon">💰</span><div><h2>অবশিষ্ট তহবিলের খাত</h2><p>যে সকল খাতে তহবিল ব্যবহার করা হয়েছে</p></div></div>
+      <div id="memberFundAccount" class="report-output"></div>
+    </section>
+
+    <section id="memberNoticeSection" class="member-subsection">
+      <div class="section-title compact"><span class="title-icon">📢</span><div><h2>নোটিশ</h2><p>সংস্থার প্রকাশিত ঘোষণা ও নোটিশ</p></div></div>
+      <div id="memberNoticeAccount" class="notice-list"></div>
+    </section>
   </section>
+
+  
 
   <section id="adminPanel" class="result-card member-card" hidden>
     <div class="section-title"><span class="title-icon">🔐</span><div><h2>মেম্বার অনুমোদন</h2><p>শুধু অনুমোদিত অ্যাডমিনের জন্য — এখান থেকে সদস্য অনুমোদন ও হিসাবের দৃশ্যমানতা নিয়ন্ত্রণ করা যাবে</p></div></div>
