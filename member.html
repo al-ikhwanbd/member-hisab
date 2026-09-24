@@ -7,39 +7,64 @@
 <meta name="description" content="আল ইখওয়ান ইসলামী সংস্থা বাংলাদেশের সদস্য অ্যাকাউন্ট">
 <link rel="icon" type="image/png" href="favicon.png">
 <link rel="apple-touch-icon" href="icon-192.png">
-<link rel="stylesheet" href="style.css?v=45">
-<link rel="stylesheet" href="member-auth.css?v=3">
+<link rel="stylesheet" href="style.css?v=46">
+<link rel="stylesheet" href="member-auth.css?v=6">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <title>সদস্য অ্যাকাউন্ট — আল ইখওয়ান ইসলামী সংস্থা বাংলাদেশ</title>
 </head>
 <body>
 <header class="top-header">
   <div class="nav container">
-    <a class="brand" href="index.html#personal" aria-label="মূল হিসাব">
+    <a class="brand" href="index.html" aria-label="মূল হিসাব">
       <img class="logo" src="Al ikhwan logo.jpg" alt="আল ইখওয়ান ইসলামী সংস্থার লোগো">
       <div class="brand-text"><strong>আল ইখওয়ান ইসলামী সংস্থা বাংলাদেশ</strong><span>সদস্য অ্যাকাউন্ট</span></div>
     </a>
+    <button class="menu-btn member-menu-btn" id="memberMenuBtn" aria-label="মেম্বার মেনু" aria-expanded="false" hidden>☰</button>
   </div>
   <div class="hero"><div class="container"><h1>সদস্য অ্যাকাউন্ট</h1><p>সদস্যের নাম ও পাসওয়ার্ড দিয়ে সহজে সদস্য অ্যাকাউন্ট ব্যবহার করুন</p></div></div>
 </header>
+<div class="menu-overlay" id="memberMenuOverlay"></div>
+<nav id="memberMobileMenu" aria-label="মেম্বার মেনু">
+  <button class="menu-close" id="memberMenuClose" aria-label="মেনু বন্ধ করুন">×</button>
+  <div class="drawer-logo"><img src="Al ikhwan logo.jpg" alt="আল ইখওয়ান ইসলামী সংস্থার লোগো"></div>
+  <div class="drawer-title">মেম্বার মেনু</div>
+  <a href="#dashboard" data-member-view="dashboard"><span>👤</span>আমার ব্যক্তিগত হিসাব</a>
+  <a href="#allMembersSection" data-member-view="all"><span>👥</span>সকল সদস্যের হিসাব</a>
+  <a href="#organizationSummary" data-member-view="org"><span>🏦</span>সংস্থার সামগ্রিক তথ্য</a>
+  <a href="index.html"><span>🏠</span>মূল পেজ</a>
+  <a href="#" id="memberMenuLogout"><span>🚪</span>লগআউট</a>
+</nav>
 <main class="container main member-main">
   <section id="authCard" class="result-card member-card">
-    <div class="section-title"><span class="title-icon">👤</span><div><h2 id="authTitle">সদস্য লগইন</h2><p id="authSubtitle">আপনার সদস্যের নাম নির্বাচন করে পাসওয়ার্ড দিয়ে লগইন করুন।</p></div></div>
-    <form id="loginForm" class="member-form">
-      <label>সদস্যের নাম <b>*</b><select id="loginMember" name="member_id" required><option value="">-- সদস্যের নাম নির্বাচন করুন --</option></select></label>
-      <label>পাসওয়ার্ড <b>*</b><input name="password" required type="password" autocomplete="current-password" placeholder="পাসওয়ার্ড"></label>
-      <button class="btn btn-primary full" type="submit">🔐 সদস্য লগইন</button>
-    </form>
-    <div class="signup-divider"><span>নতুন সদস্য?</span></div>
-    <button id="showSignup" class="btn btn-light full signup-open" type="button">📝 Sign Up / নতুন অ্যাকাউন্ট তৈরি</button>
-    <form id="signupForm" class="member-form" hidden>
-      <label>সদস্যের নাম <b>*</b><select id="signupMember" name="member_id" required><option value="">-- সদস্যের নাম নির্বাচন করুন --</option></select></label>
-      <label>ঠিকানা <b>*</b><textarea name="address" required minlength="2" autocomplete="street-address" placeholder="আপনার ঠিকানা"></textarea></label>
-      <label>মোবাইল নম্বর <b>*</b><input id="signupMobile" name="mobile" inputmode="tel" autocomplete="tel" placeholder="01XXXXXXXXX"></label>
-      <label>পাসওয়ার্ড <b>*</b><input name="password" required type="password" minlength="6" autocomplete="new-password" placeholder="কমপক্ষে ৬ অক্ষর"></label>
-      <button class="btn btn-primary full" type="submit">📝 অ্যাকাউন্ট তৈরি করুন</button>
-      <button id="backToLogin" class="btn btn-light full" type="button" hidden>← সদস্য লগইনে ফিরে যান</button>
-    </form>
+    <div class="section-title"><span class="title-icon">👤</span><div><h2 id="authTitle">সদস্য অ্যাকাউন্ট</h2><p id="authSubtitle">আপনি লগইন করবেন নাকি নতুন অ্যাকাউন্ট তৈরি করবেন—একটি অপশন বেছে নিন।</p></div></div>
+
+    <div id="memberAuthChooser" class="member-auth-chooser">
+      <button id="openMemberLogin" class="btn btn-primary full" type="button">🔐 সদস্য লগইন</button>
+      <button id="openMemberSignup" class="btn btn-light full signup-open" type="button">📝 নতুন সদস্য সাইন আপ</button>
+    </div>
+
+    <div id="loginPanel" hidden>
+      <form id="loginForm" class="member-form">
+        <label>সদস্যের নাম <b>*</b><select id="loginMember" name="member_id" required><option value="">-- সদস্যের নাম নির্বাচন করুন --</option></select></label>
+        <label>পাসওয়ার্ড <b>*</b><input name="password" required type="password" autocomplete="current-password" placeholder="পাসওয়ার্ড"></label>
+        <button class="btn btn-primary full" type="submit">🔐 সদস্য লগইন</button>
+      </form>
+      <button id="loginBack" class="btn btn-light full auth-back" type="button">← আগের পেজে ফিরে যান</button>
+      <button id="loginToSignup" class="btn btn-light full auth-secondary" type="button">📝 নতুন অ্যাকাউন্ট তৈরি করুন</button>
+    </div>
+
+    <div id="signupPanel" hidden>
+      <form id="signupForm" class="member-form">
+        <label>সদস্যের নাম <b>*</b><select id="signupMember" name="member_id" required><option value="">-- সদস্যের নাম নির্বাচন করুন --</option></select></label>
+        <label>ঠিকানা <b>*</b><textarea name="address" required minlength="2" autocomplete="street-address" placeholder="আপনার ঠিকানা"></textarea></label>
+        <label>মোবাইল নম্বর <b>*</b><input id="signupMobile" name="mobile" inputmode="tel" autocomplete="tel" placeholder="01XXXXXXXXX"></label>
+        <label>পাসওয়ার্ড <b>*</b><input name="password" required type="password" minlength="6" autocomplete="new-password" placeholder="কমপক্ষে ৬ অক্ষর"></label>
+        <button class="btn btn-primary full" type="submit">📝 অ্যাকাউন্ট তৈরি করুন</button>
+      </form>
+      <button id="signupBack" class="btn btn-light full auth-back" type="button">← আগের পেজে ফিরে যান</button>
+      <button id="signupToLogin" class="btn btn-light full auth-secondary" type="button">🔐 সদস্য লগইনে যান</button>
+    </div>
+
     <div id="authMsg" class="message"></div>
   </section>
 
@@ -74,6 +99,6 @@
 </main>
 <footer><div class="container">© <span id="footerYear"></span> আল ইখওয়ান ইসলামী সংস্থা বাংলাদেশ<div class="footer-sub">সদস্য অ্যাকাউন্ট</div></div></footer>
 <script src="member-auth-config.js?v=3"></script>
-<script src="member-auth.js?v=5"></script>
+<script src="member-auth.js?v=6"></script>
 </body>
 </html>

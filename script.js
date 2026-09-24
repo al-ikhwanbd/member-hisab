@@ -381,15 +381,33 @@ function renderAdminData(){
   q('adminAssets').innerHTML=`<table><thead><tr><th>বছর</th><th>খাত</th><th class="name">বিবরণ</th><th>পরিমাণ</th><th>অ্যাকশন</th></tr></thead><tbody>`+assets.map(x=>`<tr><td>${esc(x.year)}</td><td>${esc(x.category)}</td><td class="name">${esc(x.description)}</td><td>${money(x.amount)}</td><td class="row-actions"><button class="small-btn edit" onclick="editAsset('${esc(x.id)}')">Edit</button><button class="small-btn del" onclick="del('assets','${esc(x.id)}')">Delete</button></td></tr>`).join('')+`</tbody></table>`;
   q('adminNotices').innerHTML=`<table><thead><tr><th>শিরোনাম</th><th class="name">বিবরণ</th><th>তারিখ</th><th>অ্যাকশন</th></tr></thead><tbody>`+notices.map(x=>`<tr><td>${esc(x.title)}</td><td class="name">${esc(x.description)}</td><td>${esc(x.publish_date||'')}</td><td class="row-actions"><button class="small-btn edit" onclick="editNotice('${esc(x.id)}')">Edit</button><button class="small-btn del" onclick="del('notices','${esc(x.id)}')">Delete</button></td></tr>`).join('')+`</tbody></table>`;
 }
-function showAdminGate(showLogin=false){const gate=q('authGate'),main=q('mainContent'),box=q('gateLoginBox');if(gate)gate.hidden=!showLogin;if(main)main.hidden=true;if(box)box.hidden=!showLogin;}
-function showAuthenticatedMain(){const gate=q('authGate'),main=q('mainContent');if(gate)gate.hidden=true;if(main)main.hidden=false;route();}
+function setPublicLanding(isAuthenticated){
+  const gate=q('authGate'),main=q('mainContent'),menuBtn=q('menuBtn');
+  if(gate)gate.hidden=!!isAuthenticated;
+  if(main)main.hidden=!isAuthenticated;
+  if(menuBtn)menuBtn.hidden=!isAuthenticated;
+  if(!isAuthenticated){
+    const box=q('gateLoginBox');
+    if(box)box.hidden=true;
+    setMenu(false);
+  }
+}
+function showAdminGate(showLogin=false){
+  const box=q('gateLoginBox');
+  setPublicLanding(false);
+  if(box)box.hidden=!showLogin;
+}
+function showAuthenticatedMain(){
+  setPublicLanding(true);
+  route();
+}
 async function checkAdmin(){
   if(!memberSb){showAdminGate(true);q('gateLoginMsg').textContent='Admin authentication configuration পাওয়া যায়নি।';return false}
   const {data:{session}}=await memberSb.auth.getSession();
   adminUser=session?.user||null;
   if(!adminUser){showAdminGate(false);return false}
   const {data,error}=await memberSb.from('member_admins').select('user_id').eq('user_id',adminUser.id).maybeSingle();
-  if(error||!data){await memberSb.auth.signOut();showAdminGate(true);q('gateLoginMsg').textContent=error?'Admin permission যাচাই করা যায়নি।':'এই অ্যাকাউন্টে অ্যাডমিন অনুমতি নেই।';return false}
+  if(error||!data){await memberSb.auth.signOut();showAdminGate(false);q('gateLoginMsg').textContent=error?'Admin permission যাচাই করা যায়নি।':'এই অ্যাকাউন্টে অ্যাডমিন অনুমতি নেই।';return false}
   q('adminBox').hidden=false;q('adminUser').textContent=adminUser.email||'Admin';
   if(sb){const {data:ms}=await sb.auth.getSession();mainAdminReady=!!ms?.session;}
   showAuthenticatedMain();
@@ -582,5 +600,5 @@ document.addEventListener('DOMContentLoaded',()=>{
   q('addOpen').addEventListener('click',()=>{const value=q('addSelect').value;if(!value){showMessage('আগে একটি যুক্ত করার বিষয় নির্বাচন করুন।',false);return}openForm(value);q('addArea').scrollIntoView({behavior:'smooth',block:'start'})});
   q('manageOpen').addEventListener('click',()=>{const value=q('manageSelect').value;if(!value){showMessage('আগে একটি সম্পাদনার বিষয় নির্বাচন করুন।',false);return}openManagement(value);q('managementArea').scrollIntoView({behavior:'smooth',block:'start'})});
   q('memberForm').addEventListener('submit',e=>{e.preventDefault();saveMember()});q('paymentForm').addEventListener('submit',e=>{e.preventDefault();savePayment()});q('profitForm').addEventListener('submit',e=>{e.preventDefault();saveProfit()});q('expenseForm').addEventListener('submit',e=>{e.preventDefault();saveExpense()});q('assetForm').addEventListener('submit',e=>{e.preventDefault();saveAsset()});q('noticeForm').addEventListener('submit',e=>{e.preventDefault();saveNotice()});
-  route();checkAdmin().then(ok=>{if(ok)load();});
+  setPublicLanding(false);checkAdmin().then(ok=>{if(ok)load();});
 });
