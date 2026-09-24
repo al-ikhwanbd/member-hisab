@@ -31,6 +31,7 @@
   function due(member,year='all'){return Math.max(required(year)-calcPaid(member,year),0);}
   function detectMonthly(){const p=mainData.payments.find(x=>Number(x.required_amount)>0);monthlyRequired=Number(p?.required_amount||DEFAULT_MONTHLY_REQUIRED)||DEFAULT_MONTHLY_REQUIRED;}
   function findMemberByMobile(mobile){return mainData.members.find(m=>normalizeMobile(m.mobile)===mobile)||null;}
+function findMemberById(id){return mainData.members.find(m=>String(m.id)===String(id))||null;}
   async function loadMainData(onlyMember=null){
     if(!mainSb) throw new Error('মূল হিসাবের Supabase configuration পাওয়া যায়নি।');
     const [m,p,pr,e]=await Promise.all([
@@ -43,7 +44,7 @@
     if(errors.length) throw errors[0].error;
     mainData={members:m.data||[],payments:p.data||[],profits:pr.data||[],expenses:e.data||[],assets:[],notices:[]};
     detectMonthly();
-    currentMainMember=onlyMember?findMemberByMobile(onlyMember):null;
+    currentMainMember=onlyMember?findMemberById(onlyMember):null;
     return currentMainMember;
   }
   async function signUp(e){
@@ -53,18 +54,14 @@
     if(name.length<2||address.length<2){msg('নাম ও ঠিকানা সঠিকভাবে দিন।');return;}
     if(!validMobile(mobile)){msg('সঠিক ১১ সংখ্যার মোবাইল নম্বর দিন।');return}
     if(password.length<6){msg('পাসওয়ার্ড কমপক্ষে ৬ অক্ষরের হতে হবে।');return}
-    if(!mainSb){msg('মূল হিসাবের সংযোগ পাওয়া যায়নি।');return}
-    msg('অ্যাকাউন্ট যাচাই ও তৈরি হচ্ছে...',true);
+    msg('অ্যাকাউন্ট তৈরি হচ্ছে...',true);
     try{
-      const {data:existing,error:me}=await mainSb.from('members').select('id,name,mobile,status').eq('status','active').eq('mobile',mobile).maybeSingle();
-      if(me) throw me;
-      if(!existing){msg('এই মোবাইল নম্বরটি অনুমোদিত সদস্য তালিকায় নেই। আগে মূল সাইটে সদস্য হিসেবে তথ্য থাকতে হবে।');return;}
       const {data,error}=await sb.auth.signUp({phone:'+88'+mobile,password});
       if(error) throw error;
       const uid=data.user?.id;if(!uid) throw new Error('অ্যাকাউন্ট তৈরি হয়েছে, কিন্তু ব্যবহারকারী আইডি পাওয়া যায়নি।');
       const {error:pe}=await sb.from('member_profiles').insert({id:uid,full_name:name,address,mobile,status:'pending'});
       if(pe){await sb.auth.signOut();throw pe;}
-      await sb.auth.signOut();e.currentTarget.reset();toggle('login');msg('অ্যাকাউন্ট তৈরি হয়েছে। অ্যাডমিন অনুমোদনের পর লগইন করতে পারবেন।',true);
+      await sb.auth.signOut();e.currentTarget.reset();toggle('login');msg('অ্যাকাউন্ট তৈরি হয়েছে। এখন অ্যাডমিন আপনার অ্যাকাউন্টের সঙ্গে মূল সদস্যের নাম যুক্ত করে অনুমোদন করবেন।',true);
     }catch(err){msg(err.message||'অ্যাকাউন্ট তৈরি করা যায়নি।');}
   }
   async function signIn(e){
@@ -85,12 +82,15 @@
     currentProfile=data;
     if(data.status!=='approved'){showOnly('pending');return}
     try{
-      await loadMainData(data.mobile);
-      if(!currentMainMember){msg('এই সদস্যের মোবাইল নম্বর মূল সদস্য তালিকায় পাওয়া যায়নি। অ্যাডমিনকে তথ্য যাচাই করতে বলুন।');await sb.auth.signOut();showOnly('auth');return;}
+      const {data:link,error:le}=await sb.from('member_account_links').select('main_member_id').eq('member_user_id',session.user.id).maybeSingle();
+      if(le) throw le;
+      if(!link?.main_member_id) throw new Error('আপনার অ্যাকাউন্টের সঙ্গে কোনো সদস্যের হিসাব এখনো যুক্ত করা হয়নি। অ্যাডমিনকে সদস্য যুক্ত করতে বলুন।');
+      await loadMainData(link.main_member_id);
+      if(!currentMainMember) throw new Error('অ্যাডমিন যে সদস্যের সঙ্গে অ্যাকাউন্ট যুক্ত করেছেন, সেই সদস্যটি মূল তালিকায় পাওয়া যায়নি।');
     }catch(err){msg(err.message||'হিসাব লোড করা যায়নি।');showOnly('auth');return}
     showOnly('dashboard');
-    $('memberName').textContent=data.full_name;$('memberMobile').textContent=data.mobile;
-    $('memberProfile').innerHTML=`<div class="profile-item"><span>নাম</span><strong>${esc(data.full_name)}</strong></div><div class="profile-item"><span>ঠিকানা</span><strong>${esc(data.address)}</strong></div><div class="profile-item"><span>মোবাইল</span><strong>${esc(data.mobile)}</strong></div><div class="profile-item"><span>অবস্থা</span><strong>অনুমোদিত</strong></div>`;
+    $('memberName').textContent=currentProfile.full_name;$('memberMobile').textContent=currentProfile.mobile;
+    $('memberProfile').innerHTML=`<div class="profile-item"><span>নাম</span><strong>${esc(currentProfile.full_name)}</strong></div><div class="profile-item"><span>ঠিকানা</span><strong>${esc(currentProfile.address)}</strong></div><div class="profile-item"><span>লগইন মোবাইল</span><strong>${esc(currentProfile.mobile)}</strong></div><div class="profile-item"><span>মূল সদস্য</span><strong>${esc(currentMainMember.name)}</strong></div>`;
     await loadDashboard();
   }
   async function getVisibility(){const {data,error}=await sb.from('member_visibility_settings').select('all_members_public').eq('id',true).maybeSingle();if(error)return false;return !!data?.all_members_public;}
@@ -127,21 +127,34 @@
   async function loadPending(){
     const box=$('pendingMembers');box.hidden=false;const publicAll=await getVisibility();
     const controls=`<div class="visibility-controls"><div><b>সকল সদস্যের হিসাব:</b> <strong>${publicAll?'Public':'Hide'}</strong></div><div><button class="small-btn approve" onclick="window.memberSetPublic()">🟢 সকলের হিসাব Public</button> <button class="small-btn reject" onclick="window.memberSetHide()">🔴 সকলের হিসাব Hide</button></div></div>`;
-    const {data,error}=await sb.from('member_profiles').select('id,full_name,address,mobile,created_at,status').eq('status','pending').order('created_at',{ascending:true});
+    const {data:membersList,error:me}=await mainSb.from('members').select('id,name,serial_no,mobile,status').eq('status','active').order('serial_no',{ascending:true,nullsFirst:false}).order('created_at');
+    if(me){msg(me.message,false,'adminMsg');return}
+    const {data:pending,error}=await sb.from('member_profiles').select('id,full_name,address,mobile,created_at,status').eq('status','pending').order('created_at',{ascending:true});
     if(error){msg(error.message,false,'adminMsg');return}
     let rows='';
-    for(const x of (data||[])){
-      let exists=false;try{const {data:m}=await mainSb.from('members').select('id,name,mobile,status').eq('status','active').eq('mobile',normalizeMobile(x.mobile)).maybeSingle();exists=!!m;}catch{}
-      rows+=`<tr><td>${esc(x.full_name)}</td><td class="name">${esc(x.address)}</td><td>${esc(x.mobile)}</td><td>${exists?'মূল তালিকায় আছে':'⚠️ মূল তালিকায় নেই'}</td><td>${new Date(x.created_at).toLocaleDateString('bn-BD')}</td><td><button class="small-btn approve" onclick="window.memberApprove('${x.id}')" ${exists?'':'disabled'}>অনুমোদন</button> <button class="small-btn reject" onclick="window.memberReject('${x.id}')">বাতিল</button></td></tr>`;
+    for(const x of (pending||[])){
+      const options=(membersList||[]).map((m,i)=>`<option value="${esc(m.id)}">${Number(m.serial_no||i+1).toLocaleString('bn-BD')}. ${esc(m.name)}${m.mobile?' — '+esc(m.mobile):''}</option>`).join('');
+      rows+=`<tr><td>${esc(x.full_name)}</td><td>${esc(x.address)}</td><td>${esc(x.mobile)}</td><td><select id="link_${esc(x.id)}"><option value="">-- সদস্যের নাম নির্বাচন করুন --</option>${options}</select></td><td>${new Date(x.created_at).toLocaleDateString('bn-BD')}</td><td><button class="small-btn approve" onclick="window.memberApprove('${x.id}')">যুক্ত করুন ও অনুমোদন</button> <button class="small-btn reject" onclick="window.memberReject('${x.id}')">বাতিল</button></td></tr>`;
     }
-    box.innerHTML=controls+`<table><thead><tr><th>নাম</th><th>ঠিকানা</th><th>মোবাইল</th><th>সদস্য মিল</th><th>তারিখ</th><th>অ্যাকশন</th></tr></thead><tbody>${rows||'<tr><td colspan="6">কোনো Pending account নেই</td></tr>'}</tbody></table>`;
+    box.innerHTML=controls+`<div class="admin-link-box"><b>নতুন নিয়ম:</b> সদস্য যে মোবাইল নম্বর দিয়ে সাইন আপ করবে, সেটিই তার লগইন নম্বর থাকবে। নিচের তালিকা থেকে অ্যাডমিন শুধু মূল হিসাবের সদস্যের নাম নির্বাচন করে অ্যাকাউন্টটি যুক্ত করবেন।</div><table><thead><tr><th>সাইন আপ নাম</th><th>ঠিকানা</th><th>লগইন নম্বর</th><th>মূল সদস্য</th><th>তারিখ</th><th>অ্যাকশন</th></tr></thead><tbody>${rows||'<tr><td colspan="6">কোনো Pending account নেই</td></tr>'}</tbody></table>`;
+    await loadLinkedMembers(membersList||[]);
+  }
+  async function loadLinkedMembers(membersList=[]){
+    const box=$('linkedMembers'); if(!box)return; box.hidden=false;
+    const {data:links,error}=await sb.from('member_account_links').select('member_user_id,main_member_id,updated_at');
+    if(error){box.innerHTML='<div class="admin-link-box">Member account linking table এখনো সেটআপ করা হয়নি। ZIP-এর SQL সেটআপ ফাইল অনুযায়ী একবার সেটআপ করুন।</div>';return}
+    const profiles={};
+    const ids=(links||[]).map(x=>x.member_user_id);
+    if(ids.length){const {data:ps}=await sb.from('member_profiles').select('id,full_name,mobile,status').in('id',ids);(ps||[]).forEach(x=>profiles[x.id]=x);}
+    const rows=(links||[]).map((l,i)=>{const p=profiles[l.member_user_id]||{};const m=(membersList||[]).find(x=>String(x.id)===String(l.main_member_id))||{};return `<tr><td>${i+1}</td><td>${esc(p.full_name||'')}</td><td>${esc(p.mobile||'')}</td><td>${esc(m.name||'')}</td><td>${p.status==='approved'?'অনুমোদিত':esc(p.status||'')}</td></tr>`}).join('');
+    box.innerHTML=`<h3>🔗 যুক্ত করা সদস্য অ্যাকাউন্ট</h3><table><thead><tr><th>ক্রম</th><th>অ্যাকাউন্ট নাম</th><th>লগইন নম্বর</th><th>মূল সদস্য</th><th>অবস্থা</th></tr></thead><tbody>${rows||'<tr><td colspan="5">এখনো কোনো অ্যাকাউন্ট যুক্ত করা হয়নি।</td></tr>'}</tbody></table>`;
   }
   async function setStatus(id,status){
     if(status==='approved'){
-      const {data:p}=await sb.from('member_profiles').select('mobile').eq('id',id).maybeSingle();
-      if(!p){msg('সদস্য প্রোফাইল পাওয়া যায়নি।',false,'adminMsg');return}
-      const {data:m,error:me}=await mainSb.from('members').select('id,name,mobile,status').eq('status','active').eq('mobile',normalizeMobile(p.mobile)).maybeSingle();
-      if(me||!m){msg('এই মোবাইল নম্বরটি মূল সদস্য তালিকায় পাওয়া যায়নি। আগে মূল সাইটে সদস্যটি যোগ করুন।',false,'adminMsg');return}
+      const select=$(`link_${id}`); const mainMemberId=select?.value||'';
+      if(!mainMemberId){msg('আগে মূল সদস্যের নাম নির্বাচন করুন।',false,'adminMsg');return}
+      const {error:le}=await sb.from('member_account_links').upsert({member_user_id:id,main_member_id:mainMemberId,updated_at:new Date().toISOString()},{onConflict:'member_user_id'});
+      if(le){msg('সদস্য-অ্যাকাউন্ট সংযোগ সংরক্ষণ করা যায়নি। member_account_links SQL সেটআপ করুন।',false,'adminMsg');return}
     }
     const {error}=await sb.from('member_profiles').update({status,approved_at:status==='approved'?new Date().toISOString():null}).eq('id',id).eq('status','pending');
     if(error){msg(error.message,false,'adminMsg');return}await loadPending();
