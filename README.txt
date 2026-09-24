@@ -43,10 +43,4 @@ FINAL v7 সংশোধন:
 - Print/PDF header-এ প্রথমে বড় করে সংস্থার নাম, তার নিচে ছোট করে ঠিকানা, তারপর রিপোর্ট শিরোনাম থাকবে।
 
 
-নতুন সদস্য হিসাব Public/Hidden ব্যবস্থা:
-- Admin Panel-এ “সদস্যদের জন্য হিসাব প্রকাশ” নিয়ন্ত্রণ আছে।
-- Public করলে অনুমোদিত Member Login করা সদস্যরা ব্যক্তিগত হিসাব, সকল সদস্যদের হিসাব, সংস্থার মোট হিসাব, লভ্যাংশ/খরচের বিবরণ, তহবিল ও নোটিশ দেখতে পারবেন।
-- Hidden করলে Member Login করা সদস্যরা শুধু নিজের ব্যক্তিগত হিসাব দেখতে পারবেন; অন্য হিসাবের মেনু/ডেটা লোড হবে না।
-- Default অবস্থা Hidden।
-- এই সুবিধা চালু করতে Main Supabase SQL Editor-এ `accounting_visibility.sql` একবার চালাতে হবে।
-- Admin-এর Public/Hide পরিবর্তন শুধুমাত্র অনুমোদিত Admin session থেকে করা যাবে।
+V2 CONFIGURED: নতুন Supabase project URL/key বসানো হয়েছে। Phone login চালাতে Supabase Auth > Phone Provider এবং SMS provider (যেমন Twilio) আলাদাভাবে সক্রিয় করতে হবে। কোনো password database-এ plaintext/hash হিসেবে এই website code-এ রাখা হয়নি।

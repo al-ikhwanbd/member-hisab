@@ -9,9 +9,9 @@
 <link rel="apple-touch-icon" href="icon-192.png?v=2">
 <link rel="manifest" href="manifest.json?v=2">
 <title>আল ইখওয়ান ইসলামী সংস্থা বাংলাদেশ — হিসাব</title>
-<link rel="stylesheet" href="style.css?v=47">
+<link rel="stylesheet" href="style.css?v=46">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<style>#appShell{display:none!important}#accessGate{display:block!important}#menuBtn{display:none}#appShell[style*="block"] ~ *{} #accessGate{max-width:520px;margin:28px auto 40px;padding:0 12px}#appShell{display:none}.access-card{background:#fff;border:1px solid #d6e3de;border-radius:14px;padding:20px;box-shadow:0 8px 24px rgba(0,0,0,.06)}.access-card h2{margin:0 0 6px}.access-card p{color:#64736e;margin:0 0 16px}.access-actions{display:grid;gap:10px}.access-actions .btn{width:100%}.access-panel{margin-top:14px}.access-panel[hidden]{display:none!important}.access-panel input,.access-panel select,.access-panel textarea{width:100%;box-sizing:border-box;margin:6px 0 10px;padding:11px;border:1px solid #cbd9d4;border-radius:8px}.member-mode #mobileMenu [data-view="admin"],.member-mode #admin{display:none!important}</style></head>
+</head>
 <body>
 <header class="top-header">
   <div class="nav container">
@@ -22,7 +22,7 @@
         <span>সংস্থার হিসাব অনলাইনে দেখুন</span>
       </div>
     </a>
-    <button class="menu-btn" id="menuBtn" aria-label="মেইন মেনু" aria-expanded="false">☰</button>
+    <button class="menu-btn" id="menuBtn" aria-label="মেইন মেনু" aria-expanded="false" hidden>☰</button>
   </div>
   <div class="hero">
     <div class="container">
@@ -31,6 +31,19 @@
     </div>
   </div>
 </header>
+
+<section id="authGate" class="result-card auth-gate">
+  <div class="section-title"><span class="title-icon">🔐</span><div><h2>প্রবেশ করুন</h2><p>হিসাব দেখতে আগে এডমিন অথবা মেম্বার হিসেবে লগইন করুন।</p></div></div>
+  <div class="gate-actions">
+    <button type="button" class="btn btn-primary" id="gateAdminBtn">🔐 Admin Login</button>
+    <a class="btn btn-light" href="member.html">🧑‍💻 Member Login</a>
+  </div>
+  <div id="gateLoginBox" class="login-card" hidden>
+    <div class="login-heading"><span>🔐</span><div><h3>Admin Login</h3><p class="muted">Admin ইমেইল ও পাসওয়ার্ড দিয়ে লগইন করুন।</p></div></div>
+    <div class="login-fields"><input id="gateAdminEmail" type="email" autocomplete="username" placeholder="Admin Email"><input id="gateAdminPassword" type="password" autocomplete="current-password" placeholder="Password"></div>
+    <button class="btn btn-primary full" id="gateLoginBtn">🔐 Admin Login</button><div id="gateLoginMsg" class="message"></div>
+  </div>
+</section>
 
 <div class="menu-overlay" id="menuOverlay"></div>
 <nav id="mobileMenu" aria-label="মেইন মেনু">
@@ -44,10 +57,11 @@
   <a href="#fund" data-view="fund"><span>💰</span>অবশিষ্ট তহবিলের খাত</a>
   <a href="#notices" data-view="notices"><span>📢</span>নোটিশ</a>
   <a href="#admin" data-view="admin"><span>🔐</span>এডমিন প্যানেল</a>
+  <a href="member.html#admin"><span>📝</span>নতুন সদস্য অনুমোদন</a>
+  <a href="member.html"><span>🧑‍💻</span>মেম্বার লগইন / অ্যাকাউন্ট</a>
 </nav>
 
-<section id="accessGate" aria-label="লগইন"><div class="access-card"><h2>🔐 হিসাব দেখতে লগইন করুন</h2><p>হিসাবের তথ্য দেখতে আগে সদস্য অথবা অ্যাডমিন হিসেবে লগইন করতে হবে।</p><div id="accessChooser" class="access-actions"><button class="btn btn-primary" id="chooseMemberLogin" type="button">👤 সদস্য লগইন</button><button class="btn btn-light" id="chooseAdminLogin" type="button">🔐 এডমিন লগইন</button></div><div id="memberAccessPanel" class="access-panel" hidden><form id="memberLoginForm"><label>সদস্যের নাম <b>*</b><select id="accessMember" required><option value="">-- সদস্যের নাম নির্বাচন করুন --</option></select></label><label>পাসওয়ার্ড <b>*</b><input id="accessPassword" type="password" required></label><button class="btn btn-primary full" type="submit">🔐 সদস্য লগইন</button></form><button class="btn btn-light full" id="showSignup" type="button">📝 নতুন সদস্য সাইন আপ</button><div id="memberAccessMsg" class="message"></div></div><div id="memberSignupPanel" class="access-panel" hidden><form id="memberSignupForm"><label>সদস্যের নাম <b>*</b><select id="accessSignupMember" required><option value="">-- সদস্যের নাম নির্বাচন করুন --</option></select></label><label>ঠিকানা <b>*</b><textarea id="accessAddress" required minlength="2"></textarea></label><label>মোবাইল নম্বর <b>*</b><input id="accessMobile" inputmode="tel"></label><label>পাসওয়ার্ড <b>*</b><input id="accessSignupPassword" type="password" required minlength="6"></label><button class="btn btn-primary full" type="submit">📝 অ্যাকাউন্ট তৈরি করুন</button></form><button class="btn btn-light full" id="backToMemberLogin" type="button">← সদস্য লগইনে ফিরে যান</button><div id="memberSignupMsg" class="message"></div></div><div id="adminAccessPanel" class="access-panel" hidden><label>অ্যাডমিন ইমেইল<input id="gateAdminEmail" type="email"></label><label>পাসওয়ার্ড<input id="gateAdminPassword" type="password"></label><button class="btn btn-primary full" id="gateAdminLogin" type="button">🔐 এডমিন লগইন</button><div id="adminAccessMsg" class="message"></div></div></div></section>
-<div id="appShell"><main class="container main">
+<main id="mainContent" class="container main" hidden>
   <section id="personal" class="result-card page-section">
     <div class="section-title">
       <span class="title-icon">👤</span>
@@ -95,21 +109,10 @@
   <section id="admin" class="result-card page-section">
     <div class="section-title"><span class="title-icon">🔐</span><div><h2>এডমিন প্যানেল</h2><p>শুধুমাত্র অনুমোদিত অ্যাডমিনের জন্য</p></div></div>
 
-    <div id="loginBox" class="login-card">
-      <h3>এডমিন লগইন</h3>
-      <p class="muted">অনুমোদিত ইমেইল ও পাসওয়ার্ড দিয়ে প্রবেশ করুন।</p>
-      <div class="login-fields"><input id="adminEmail" type="email" autocomplete="username" placeholder="ইমেইল"><input id="adminPassword" type="password" autocomplete="current-password" placeholder="পাসওয়ার্ড"></div>
-      <button class="btn btn-primary full" id="loginBtn">🔐 লগইন</button>
-      <div id="loginMsg" class="message"></div>
-    </div>
+    <div id="loginBox" class="login-card" hidden><div id="loginMsg" class="message"></div></div>
 
     <div id="adminBox" hidden>
       <div class="adminbar"><div><b id="adminUser"></b><span class="admin-badge">ADMIN</span></div><button class="btn danger" id="logoutBtn">লগআউট</button></div>
-
-      <div id="accountingVisibilityCard" class="accounting-visibility-card">
-        <div><h3>🌐 সদস্যদের জন্য হিসাব প্রকাশ</h3><p id="accountingVisibilityStatus">বর্তমান অবস্থা যাচাই করা হচ্ছে...</p></div>
-        <div class="visibility-actions"><button type="button" class="btn btn-primary" id="accountingPublicBtn" onclick="setAccountingVisibility(true)">🟢 হিসাব Public করুন</button><button type="button" class="btn btn-light" id="accountingHideBtn" onclick="setAccountingVisibility(false)">🔴 হিসাব Hide করুন</button></div>
-      </div>
 
       <h2 class="choose-title">যুক্ত করার অপশন বাছাই করুন</h2>
       <div class="admin-select-row">
@@ -146,7 +149,6 @@
           <option value="members">সদস্য ব্যবস্থাপনা</option>
           <option value="payments">জমা ব্যবস্থাপনা</option>
           <option value="profits">লভ্যাংশ ব্যবস্থাপনা</option><option value="dividendVisibility">সদস্যদের লভ্যাংশ Public/Hide</option>
-          <option value="accountingVisibility">সদস্যদের হিসাব Public/Hide</option>
           <option value="expenses">খরচ ব্যবস্থাপনা</option>
           <option value="assets">অবশিষ্ট তহবিলের খাত ব্যবস্থাপনা</option>
           <option value="notices">নোটিশ ব্যবস্থাপনা</option>
@@ -158,7 +160,6 @@
         <div id="manageMembers" class="admin-data"><h3>👥 সদস্য ব্যবস্থাপনা</h3><div id="adminMembers" class="table-wrap"></div></div>
         <div id="managePayments" class="admin-data"><h3>💰 জমা ব্যবস্থাপনা</h3><div class="management-filter"><label>সাল নির্বাচন করুন<select id="paymentManageYear"></select></label><label>মাস নির্বাচন করুন<select id="paymentManageMonth"><option value="">-- মাস নির্বাচন করুন --</option><option value="all">সকল মাস</option><option value="1">জানুয়ারি</option><option value="2">ফেব্রুয়ারি</option><option value="3">মার্চ</option><option value="4">এপ্রিল</option><option value="5">মে</option><option value="6">জুন</option><option value="7">জুলাই</option><option value="8">আগস্ট</option><option value="9">সেপ্টেম্বর</option><option value="10">অক্টোবর</option><option value="11">নভেম্বর</option><option value="12">ডিসেম্বর</option></select></label><label>সদস্য নির্বাচন করুন<select id="paymentManageMember"><option value="">-- সদস্য নির্বাচন করুন --</option></select></label></div><div id="adminPayments" class="table-wrap"></div></div>
         <div id="manageProfits" class="admin-data"><h3>📈 লভ্যাংশ ব্যবস্থাপনা</h3><div id="adminProfits" class="table-wrap"></div></div><div id="manageDividendVisibility" class="admin-data"><h3>👥 সদস্যদের লভ্যাংশ Public/Hide</h3><div id="adminDividendVisibility" class="table-wrap"></div></div>
-        <div id="manageAccountingVisibility" class="admin-data"><h3>🌐 সদস্যদের হিসাব Public/Hide</h3><div id="adminAccountingVisibility" class="table-wrap"></div></div>
         <div id="manageExpenses" class="admin-data"><h3>🧾 খরচ ব্যবস্থাপনা</h3><div id="adminExpenses" class="table-wrap"></div></div>
         <div id="manageAssets" class="admin-data"><h3>🏦 অবশিষ্ট তহবিলের খাত ব্যবস্থাপনা</h3><div id="adminAssets" class="table-wrap"></div></div>
         <div id="manageNotices" class="admin-data"><h3>📢 নোটিশ ব্যবস্থাপনা</h3><div id="adminNotices" class="table-wrap"></div></div>
@@ -172,8 +173,9 @@
 
 <footer>
   <div class="container">© <span id="footerYear"></span> আল ইখওয়ান ইসলামী সংস্থা বাংলাদেশ<div class="footer-sub">সকল অধিকার সংরক্ষিত</div></div>
-</footer></div>
+</footer>
 <script src="supabase-config.js"></script>
-<script src="member-auth-config.js?v=3"></script><script src="access-gate.js?v=4"></script><script src="script.js?v=48"></script>
+<script src="member-auth-config.js?v=4"></script>
+<script src="script.js?v=47"></script>
 </body>
 </html>
