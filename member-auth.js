@@ -150,7 +150,17 @@ function findMemberById(id){return mainData.members.find(m=>String(m.id)===Strin
     const {data:{session}}=await sb.auth.getSession();
     if(!session?.user){showOnly('auth');return}
     const {data,error}=await sb.from('member_profiles').select('*').eq('id',session.user.id).maybeSingle();
-    if(error||!data){await sb.auth.signOut();msg('সদস্য প্রোফাইল পাওয়া যায়নি।');showOnly('auth');return}
+    if(error){await sb.auth.signOut();msg('সদস্য প্রোফাইল পাওয়া যায়নি।');showOnly('auth');return}
+    if(!data){
+      const {data:adminRow,error:adminError}=await sb.from('member_admins').select('user_id').eq('user_id',session.user.id).maybeSingle();
+      if(!adminError&&adminRow){
+        location.hash='#admin';
+        $('authCard').hidden=true;$('pendingCard').hidden=true;$('dashboard').hidden=true;$('adminPanel').hidden=false;
+        await showAdminAuthenticated();
+        return;
+      }
+      await sb.auth.signOut();msg('সদস্য প্রোফাইল পাওয়া যায়নি।');showOnly('auth');return;
+    }
     currentProfile=data;
     if(data.status!=='approved'){showOnly('pending');return}
     try{
@@ -235,14 +245,33 @@ function findMemberById(id){return mainData.members.find(m=>String(m.id)===Strin
     const due=memberDue(currentMainMember,'all');
     const dividend=currentDividendPublic?memberDividend(currentMainMember):null;
     const payable=paid+(dividend===null?0:dividend);
-    return `<div class="member-summary-heading"><span class="title-icon">📊</span><div><h2>সকল বছরের মোট হিসাব</h2><p>আপনার সকল বছরের হিসাবের সংক্ষিপ্ত বিবরণ</p></div></div>
+    const totalDeposit=totalPaid('all');
+    const totalProfitAmount=totalProfit('all');
+    const totalExpenseAmount=totalExpense('all');
+    const remainingFundAmount=totalDeposit+totalProfitAmount-totalExpenseAmount;
+    return `<div class="my-account-home">
+      <div class="my-account-member-title">
+        <h2>${esc(currentMainMember.name)}</h2>
+        <p>সকল বছরের মোট হিসাব</p>
+      </div>
       <div class="summary-grid member-home-summary-grid">
         <article><span>মোট পরিশোধ</span><strong>${money(paid)}</strong></article>
         <article><span>মোট বাকি</span><strong>${money(due)}</strong></article>
         <article><span>মোট লভ্যাংশ</span><strong>${dividend===null?'গোপন':money(dividend)}</strong></article>
         <article class="highlight"><span>সর্বমোট প্রাপ্য</span><strong>${money(payable)}</strong></article>
       </div>
-      <div class="result-download"><button class="download-btn" type="button" onclick="downloadCurrentMemberAllYearsReport()">⬇️ বিস্তারিত হিসাব ডাউনলোড</button></div>`;
+      <div class="result-download"><button class="download-btn" type="button" onclick="downloadCurrentMemberAllYearsReport()">⬇️ বিস্তারিত হিসাব ডাউনলোড</button></div>
+      <div class="my-account-org-title">
+        <h2>সংস্থার মোট হিসাব</h2>
+        <p>প্রতিষ্ঠার শুরু থেকে সকল বছরের সমন্বিত হিসাব</p>
+      </div>
+      <div class="summary-grid total-summary my-account-org-grid">
+        <article><span>মোট জমা</span><strong>${money(totalDeposit)}</strong></article>
+        <article><span>মোট লভ্যাংশ</span><strong>${money(totalProfitAmount)}</strong></article>
+        <article><span>মোট বিবিধ খরচ</span><strong>${money(totalExpenseAmount)}</strong></article>
+        <article class="highlight"><span>অবশিষ্ট তহবিল</span><strong>${money(remainingFundAmount)}</strong></article>
+      </div>
+    </div>`;
   }
   function renderMyAccount(){
     const result=$('myAccountResult');
@@ -371,7 +400,7 @@ function findMemberById(id){return mainData.members.find(m=>String(m.id)===Strin
     renderMemberHomeSummary();
     renderPersonal();
     const hash=location.hash.replace('#','');
-    showMemberView(['myAccount','personal','members','due','profitExpenseDetails','fund','notices'].includes(hash)?hash:'personal');
+    showMemberView(['myAccount','personal','members','due','profitExpenseDetails','fund','notices'].includes(hash)?hash:'myAccount');
   }
   async function logout(){if(sb)await sb.auth.signOut();currentProfile=null;currentMainMember=null;showOnly('auth');showChooser();}
   async function isCurrentUserAdmin(){
