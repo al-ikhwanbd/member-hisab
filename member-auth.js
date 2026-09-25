@@ -19,6 +19,7 @@
   const DEFAULT_MONTHLY_REQUIRED=500;
   let monthlyRequired=DEFAULT_MONTHLY_REQUIRED;
   let currentDividendPublic=false;
+  let currentAllMembersPublic=false;
 
   function msg(text,ok=false,id='authMsg'){const el=$(id);if(!el)return;el.textContent=text;el.className='message '+(ok?'success':'error');}
   function showChooser(){
@@ -234,9 +235,10 @@ function findMemberById(id){return mainData.members.find(m=>String(m.id)===Strin
     if(yEl)yEl.innerHTML='<option value="">-- সাল নির্বাচন করুন --</option><option value="all">সকল বছর</option>'+ys.map(y=>`<option value="${esc(y)}">${esc(y)}</option>`).join('');
     if(allY)allY.innerHTML='<option value="">-- সাল নির্বাচন করুন --</option><option value="all">সকল বছর</option>'+ys.map(y=>`<option value="${esc(y)}">${esc(y)}</option>`).join('');
     if(memEl){
-      // Member account keeps the same selection-box UI, but only the logged-in member is selectable.
-      memEl.innerHTML=`<option value="${esc(currentMainMember.id)}">${esc(`${Number(currentMainMember.serial_no||'')||''}. ${currentMainMember.name}`.replace(/^\. /,''))}</option>`;
-      memEl.value=String(currentMainMember.id);
+      // Keep the member personal-account page identical to the main/Admin page:
+      // the member selector shows the same active member list.
+      memEl.innerHTML='<option value="">-- সদস্য নির্বাচন করুন --</option>'+selectableMembers.map((m,i)=>`<option value="${esc(m.id)}">${esc(memberLabel(m,i))}</option>`).join('');
+      memEl.value='';
     }
   }
   function currentMemberSummaryHtml(){
@@ -328,7 +330,14 @@ function findMemberById(id){return mainData.members.find(m=>String(m.id)===Strin
     const y=$('personalYear')?.value,id=$('personalMember')?.value;
     if(!$('personalResult'))return;
     $('personalMessage').className='message hidden';
-    if(!y||!id){$('personalMessage').textContent='সাল ও সদস্য নির্বাচন করুন।';$('personalMessage').className='message error';return;}
+    if(!currentAllMembersPublic){
+      $('personalResult').innerHTML='<div class="empty-state">সদস্যদের ব্যক্তিগত হিসাব বর্তমানে Public করা হয়নি।</div>';
+      return;
+    }
+    if(!y||!id){
+      $('personalResult').innerHTML='<div class="empty-state">সাল ও সদস্য নির্বাচন করে অনুসন্ধান করুন।</div>';
+      return;
+    }
     const m=findMemberById(id);if(!m)return;
     const label=y==='all'?'সকল বছরের মোট হিসাব':`${esc(y)} সালের হিসাব`;
     const detailYears=y==='all'?years():[String(y)];
@@ -383,6 +392,7 @@ function findMemberById(id){return mainData.members.find(m=>String(m.id)===Strin
     renderFund();
     renderNotices();
     const publicAll=await getVisibility();
+    currentAllMembersPublic=publicAll;
     const oldSummary=$('personalSummary'); if(oldSummary) oldSummary.innerHTML='';
     const oldAll=$('allMembersSection'); if(oldAll) oldAll.remove();
     // All members visibility follows the existing Public/Hide setting.
@@ -394,8 +404,8 @@ function findMemberById(id){return mainData.members.find(m=>String(m.id)===Strin
       result.innerHTML='<div class="empty-state">সকল সদস্যদের হিসাব বর্তমানে Public করা হয়নি।</div>';
     }
     currentDividendPublic=await getDividendPublic(currentMainMember.id);
-    const y=$('personalYear'); if(y)y.value='all';
-    const pm=$('personalMember'); if(pm)pm.value=String(currentMainMember.id);
+    const y=$('personalYear'); if(y)y.value='';
+    const pm=$('personalMember'); if(pm)pm.value='';
     renderMyAccount();
     renderMemberHomeSummary();
     renderPersonal();
