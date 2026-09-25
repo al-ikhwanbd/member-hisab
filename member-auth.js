@@ -235,32 +235,65 @@ function findMemberById(id){return mainData.members.find(m=>String(m.id)===Strin
     const rows=ys.map(y=>`<tr><td>${esc(y)}</td><td>${money(memberPaid(currentMainMember,y))}</td><td>${money(memberDue(currentMainMember,y))}</td></tr>`).join('');
     result.innerHTML=`<div class="summary-grid personal-total-summary"><article><span>সকল বছরের মোট পরিশোধ</span><strong>${money(memberPaid(currentMainMember,'all'))}</strong></article><article><span>সকল বছরের মোট বাকি</span><strong>${money(memberDue(currentMainMember,'all'))}</strong></article></div><div class="table-wrap"><table><thead><tr><th>সাল</th><th>মোট পরিশোধ</th><th>মোট বাকি</th></tr></thead><tbody>${rows||'<tr><td colspan="3">কোনো হিসাব পাওয়া যায়নি</td></tr>'}</tbody><tfoot><tr class="total-row"><td>সর্বমোট</td><td>${money(memberPaid(currentMainMember,'all'))}</td><td>${money(memberDue(currentMainMember,'all'))}</td></tr></tfoot></table></div>`;
   }
+  function downloadHtmlFile(filename,html){
+    const blob=new Blob([html],{type:'text/html;charset=utf-8'});
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement('a');a.href=url;a.download=filename;a.rel='noopener';document.body.appendChild(a);a.click();a.remove();
+    setTimeout(()=>URL.revokeObjectURL(url),1000);
+  }
+  function reportShell(title,subtitle,body,landscape=false){
+    return `<!doctype html><html lang="bn"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${esc(title)}</title><style>*{box-sizing:border-box}body{font-family:Arial,"Noto Sans Bengali",sans-serif;margin:0;padding:20px;color:#26352f;background:#fff}.report{max-width:${landscape?'1200px':'900px'};margin:auto}.head{text-align:center;border-bottom:2px solid #087f4e;padding-bottom:12px;margin-bottom:18px}.head h1{margin:0;color:#087f4e;font-size:24px}.head p{margin:5px 0;color:#5e6e68}.table-wrap{width:100%;overflow:auto}table{width:100%;border-collapse:collapse}th,td{border:1px solid #c9d6d1;padding:7px 6px;text-align:center;white-space:nowrap;font-size:12px}th{background:#e7f3ed;color:#087f4e;font-weight:800}td.name,th.name{text-align:left}.total-row td{font-weight:800;background:#f0f7f3}.summary{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin:16px 0}.summary div{border:1px solid #dce6e1;border-radius:10px;padding:10px;text-align:center}.summary strong{display:block;color:#087f4e;font-size:18px;margin-top:4px}@media print{@page{margin:10mm;size:${landscape?'landscape':'portrait'}}.table-wrap{overflow:visible}table{width:100%}}@media(max-width:600px){body{padding:10px}th,td{font-size:10px;padding:5px 4px}}</style></head><body><div class="report"><div class="head"><h1>আল ইখওয়ান ইসলামী সংস্থা বাংলাদেশ</h1><p>${esc(title)}</p><small>${esc(subtitle)}</small></div>${body}</div></body></html>`;
+  }
+  function downloadPersonalReport(){
+    const y=$('personalYear')?.value||'all',id=$('personalMember')?.value;
+    const m=findMemberById(id);if(!m||!y){msg('আগে সাল ও সদস্য নির্বাচন করে অনুসন্ধান করুন।');return;}
+    const detailYears=y==='all'?years():[String(y)];
+    const rows=detailYears.flatMap(yr=>months.map((monthName,idx)=>{const paid=memberMonthPaid(m,yr,idx+1),d=Math.max(monthlyRequired-paid,0);return `<tr><td>${esc(yr)}</td><td>${monthName}</td><td>${money(paid)}</td><td>${money(d)}</td></tr>`;})).join('');
+    const summary=`<div class="summary"><div>মোট পরিশোধ<strong>${money(memberPaid(m,y))}</strong></div><div>মোট বাকি<strong>${money(memberDue(m,y))}</strong></div></div>`;
+    const body=`<h2>${esc(m.name)}</h2>${summary}<div class="table-wrap"><table><thead><tr><th>সাল</th><th>মাস</th><th>পরিশোধ</th><th>বাকি</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+    downloadHtmlFile(`personal-${String(y).replace(/[^0-9a-zA-Z_-]/g,'')}-${String(m.name).replace(/[^\u0980-\u09FFa-zA-Z0-9_-]+/g,'-')}.html`,reportShell(`${m.name} - ব্যক্তিগত হিসাব`,y==='all'?'সকল বছরের বিস্তারিত হিসাব':`${y} সালের বিস্তারিত হিসাব`,body,false));
+  }
+  function downloadAllMembersReport(){
+    const y=$('allMembersYear')?.value||'all';if(!y){msg('আগে একটি বছর নির্বাচন করে হিসাব দেখুন।');return;}
+    if(y==='all'){
+      const ys=years();
+      const rows=mainData.members.map((m,i)=>`<tr><td>${Number(m.serial_no||i+1).toLocaleString('bn-BD')}</td><td class="name">${esc(m.name)}</td>${ys.map(v=>`<td>${memberPaid(m,v)>0?Number(memberPaid(m,v)).toLocaleString('bn-BD'):''}</td>`).join('')}<td>${Number(memberPaid(m,'all')).toLocaleString('bn-BD')}</td><td>${Number(memberDue(m,'all')).toLocaleString('bn-BD')}</td></tr>`).join('');
+      const totals=ys.map(v=>`<td>${Number(totalPaid(v)).toLocaleString('bn-BD')}</td>`).join('');
+      const body=`<div class="table-wrap"><table><thead><tr><th>ক্রমিক</th><th class="name">সদস্যের নাম</th>${ys.map(v=>`<th>${esc(v)}</th>`).join('')}<th>মোট পরিশোধ</th><th>মোট বাকি</th></tr></thead><tbody>${rows}</tbody><tfoot><tr class="total-row"><td colspan="2">সর্বমোট</td>${totals}<td>${Number(totalPaid('all')).toLocaleString('bn-BD')}</td><td>${Number(totalDue('all')).toLocaleString('bn-BD')}</td></tr></tfoot></table></div>`;
+      downloadHtmlFile('all-members-all-years.html',reportShell('সকল বছরের সকল সদস্যদের হিসাব','সকল বছরের বিস্তারিত হিসাব',body,true));return;
+    }
+    const rows=mainData.members.map((m,i)=>`<tr><td>${Number(m.serial_no||i+1).toLocaleString('bn-BD')}</td><td class="name">${esc(m.name)}</td>${months.map((_,mi)=>{const p=memberMonthPaid(m,y,mi+1);return `<td>${p>0?Number(p).toLocaleString('bn-BD'):''}</td>`}).join('')}<td>${Number(memberPaid(m,y)).toLocaleString('bn-BD')}</td><td>${Number(memberDue(m,y)).toLocaleString('bn-BD')}</td></tr>`).join('');
+    const monthTotals=months.map((_,mi)=>mainData.payments.filter(p=>isCountablePayment(p)&&String(p.year)===String(y)&&Number(p.month)===mi+1).reduce((s,p)=>s+Number(p.paid_amount||0),0)).map(x=>`<td>${x>0?Number(x).toLocaleString('bn-BD'):''}</td>`).join('');
+    const body=`<div class="table-wrap"><table><thead><tr><th>ক্রমিক</th><th class="name">সদস্যের নাম</th>${months.map(m=>`<th>${m}</th>`).join('')}<th>মোট পরিশোধ</th><th>মোট বাকি</th></tr></thead><tbody>${rows}</tbody><tfoot><tr class="total-row"><td colspan="2">সর্বমোট</td>${monthTotals}<td>${Number(totalPaid(y)).toLocaleString('bn-BD')}</td><td>${Number(totalDue(y)).toLocaleString('bn-BD')}</td></tr></tfoot></table></div>`;
+    downloadHtmlFile(`all-members-${y}.html`,reportShell(`${y} সালের সকল সদস্যদের হিসাব`,'প্রতি মাসে শুধু পরিশোধের পরিমাণ দেখানো হয়েছে',body,true));
+  }
+
   function renderPersonal(){
     const y=$('personalYear')?.value,id=$('personalMember')?.value;
     if(!$('personalResult'))return;
+    $('personalMessage').className='message hidden';
     if(!y||!id){$('personalMessage').textContent='সাল ও সদস্য নির্বাচন করুন।';$('personalMessage').className='message error';return;}
     const m=findMemberById(id);if(!m)return;
+    const label=y==='all'?'সকল বছরের মোট হিসাব':`${esc(y)} সালের হিসাব`;
     const detailYears=y==='all'?years():[String(y)];
-    const detailRows=detailYears.flatMap(yr=>months.map((monthName,idx)=>{
-      const paid=memberMonthPaid(m,yr,idx+1),due=Math.max(monthlyRequired-paid,0);
-      return `<tr><td>${esc(yr)}</td><td>${monthName}</td><td>${paid>0?money(paid):'৳ ০'}</td><td>${money(due)}</td></tr>`;
-    })).join('');
-    $('personalMessage').className='message hidden';
-    $('personalResult').innerHTML=`<div class="report-title"><h3>${esc(m.name)}</h3><p>${y==='all'?'সকল বছরের মোট হিসাব':`${esc(y)} সালের হিসাব`}</p></div>
-      <div class="table-wrap"><table><thead><tr><th>সাল</th><th>মাস</th><th>পরিশোধ</th><th>বাকি</th></tr></thead><tbody>${detailRows}</tbody></table></div>
-      <div class="summary-grid personal-total-summary"><article><span>মোট পরিশোধ</span><strong>${money(memberPaid(m,y))}</strong></article><article><span>মোট বাকি</span><strong>${money(memberDue(m,y))}</strong></article></div>`;
+    const detailRows=detailYears.flatMap(yr=>months.map((monthName,idx)=>{const paid=memberMonthPaid(m,yr,idx+1),d=Math.max(monthlyRequired-paid,0);return `<tr><td>${esc(yr)}</td><td>${monthName}</td><td>${paid>0?money(paid):'৳ ০'}</td><td>${money(d)}</td></tr>`;})).join('');
+    const allYearsSummary=y==='all'?`<div class="detail-block member-total-detail"><div class="detail-heading"><span>📊</span><h3>সকল বছরের মোট হিসাব</h3></div><div class="summary-grid personal-total-summary"><article><span>মোট পরিশোধ</span><strong>${money(memberPaid(m,'all'))}</strong></article><article><span>মোট বাকি</span><strong>${money(memberDue(m,'all'))}</strong></article></div></div>`:`<div class="member-summary compact-summary"><div>মোট পরিশোধ<strong>${money(memberPaid(m,y))}</strong></div><div>মোট বাকি<strong>${money(memberDue(m,y))}</strong></div></div>`;
+    $('personalResult').innerHTML=`<div class="report-title"><h3>${esc(m.name)}</h3><p>${label}</p></div><div class="print-only personal-print-details"><h4>মাসভিত্তিক বিস্তারিত হিসাব</h4><div class="table-wrap"><table><thead><tr><th>সাল</th><th>মাস</th><th>পরিশোধ</th><th>বাকি</th></tr></thead><tbody>${detailRows}</tbody></table></div></div>${allYearsSummary}<div class="result-download"><button class="download-btn" type="button" onclick="downloadPersonalReport()">⬇️ বিস্তারিত হিসাব ডাউনলোড</button></div>`;
+    $('personalResult').scrollIntoView({behavior:'smooth',block:'start'});
   }
   function renderAllMembers(){
     const y=$('allMembersYear')?.value||'all';
     if(!$('allMembersResult'))return;
     if(!y){$('allMembersResult').innerHTML='<div class="empty-state">একটি বছর নির্বাচন করে হিসাব দেখুন।</div>';return;}
     if(y==='all'){
-      let rows=mainData.members.map((m,i)=>`<tr><td>${Number(m.serial_no||i+1).toLocaleString('bn-BD')}</td><td class="name nowrap">${esc(m.name)}</td>${years().map(v=>`<td>${memberPaid(m,v)>0?Number(memberPaid(m,v)).toLocaleString('bn-BD'):''}</td>`).join('')}<td>${Number(memberPaid(m,'all')).toLocaleString('bn-BD')}</td><td>${Number(memberDue(m,'all')).toLocaleString('bn-BD')}</td></tr>`).join('');
-      $('allMembersResult').innerHTML=`<div class="report-title"><h3>সকল বছরের সকল সদস্যদের হিসাব</h3><p>যে মাসে টাকা দেওয়া হয়েছে শুধু সেই টাকাই দেখানো হয়েছে</p></div><div class="table-wrap"><table class="member-report-table"><thead><tr><th>ক্রমিক</th><th class="name">সদস্যের নাম</th>${years().map(v=>`<th>${esc(v)}</th>`).join('')}<th>মোট পরিশোধ</th><th>মোট বাকি</th></tr></thead><tbody>${rows}</tbody><tfoot><tr class="total-row"><td colspan="2">সর্বমোট</td>${years().map(v=>`<td>${totalPaid(v)>0?Number(totalPaid(v)).toLocaleString('bn-BD'):''}</td>`).join('')}<td>${Number(totalPaid('all')).toLocaleString('bn-BD')}</td><td>${Number(totalDue('all')).toLocaleString('bn-BD')}</td></tr></tfoot></table></div>`;
+      const ys=years();
+      const rows=mainData.members.map((m,i)=>`<tr><td>${Number(m.serial_no||i+1).toLocaleString('bn-BD')}</td><td class="name nowrap">${esc(m.name)}</td>${ys.map(v=>`<td>${memberPaid(m,v)>0?Number(memberPaid(m,v)).toLocaleString('bn-BD'):''}</td>`).join('')}<td>${Number(memberPaid(m,'all')).toLocaleString('bn-BD')}</td><td>${Number(memberDue(m,'all')).toLocaleString('bn-BD')}</td></tr>`).join('');
+      $('allMembersResult').innerHTML=`<div class="report-title"><h3>সকল বছরের সকল সদস্যদের হিসাব</h3><p>যে মাসে টাকা দেওয়া হয়েছে শুধু সেই টাকাই দেখানো হয়েছে</p></div><div class="table-wrap"><table class="member-report-table"><thead><tr><th>ক্রমিক</th><th class="name">সদস্যের নাম</th>${ys.map(v=>`<th>${esc(v)}</th>`).join('')}<th>মোট পরিশোধ</th><th>মোট বাকি</th></tr></thead><tbody>${rows}</tbody><tfoot><tr class="total-row"><td colspan="2">সর্বমোট</td>${ys.map(v=>`<td>${totalPaid(v)>0?Number(totalPaid(v)).toLocaleString('bn-BD'):''}</td>`).join('')}<td>${Number(totalPaid('all')).toLocaleString('bn-BD')}</td><td>${Number(totalDue('all')).toLocaleString('bn-BD')}</td></tr></tfoot></table></div><div class="member-summary"><div>সকল বছরের মোট পরিশোধ<strong>${money(totalPaid('all'))}</strong></div><div>সকল বছরের মোট বাকি<strong>${money(totalDue('all'))}</strong></div></div><div class="result-download"><button class="download-btn" type="button" onclick="downloadAllMembersReport()">⬇️ বিস্তারিত হিসাব ডাউনলোড</button></div>`;
       return;
     }
     const rows=mainData.members.map((m,i)=>`<tr><td>${Number(m.serial_no||i+1).toLocaleString('bn-BD')}</td><td class="name nowrap">${esc(m.name)}</td>${months.map((_,mi)=>{const p=memberMonthPaid(m,y,mi+1);return `<td>${p>0?Number(p).toLocaleString('bn-BD'):''}</td>`}).join('')}<td>${Number(memberPaid(m,y)).toLocaleString('bn-BD')}</td><td>${Number(memberDue(m,y)).toLocaleString('bn-BD')}</td></tr>`).join('');
-    $('allMembersResult').innerHTML=`<div class="report-title"><h3>${esc(y)} সালের সকল সদস্যদের হিসাব</h3><p>প্রতি মাসে শুধু পরিশোধের পরিমাণ দেখানো হয়েছে</p></div><div class="table-wrap"><table class="member-report-table"><thead><tr><th>ক্রমিক</th><th class="name">সদস্যের নাম</th>${months.map(m=>`<th>${m}</th>`).join('')}<th>মোট পরিশোধ</th><th>মোট বাকি</th></tr></thead><tbody>${rows}</tbody></table></div><div class="member-summary"><div>মোট পরিশোধ<strong>${money(totalPaid(y))}</strong></div><div>মোট বাকি<strong>${money(totalDue(y))}</strong></div></div>`;
+    const monthTotals=months.map((_,mi)=>mainData.payments.filter(p=>isCountablePayment(p)&&String(p.year)===String(y)&&Number(p.month)===mi+1).reduce((s,p)=>s+Number(p.paid_amount||0),0)).map(x=>`<td>${x>0?Number(x).toLocaleString('bn-BD'):''}</td>`).join('');
+    $('allMembersResult').innerHTML=`<div class="report-title"><h3>${esc(y)} সালের সকল সদস্যদের হিসাব</h3><p>প্রতি মাসে শুধু পরিশোধের পরিমাণ দেখানো হয়েছে</p></div><div class="table-wrap"><table class="member-report-table"><thead><tr><th>ক্রমিক</th><th class="name">সদস্যের নাম</th>${months.map(m=>`<th>${m}</th>`).join('')}<th>মোট পরিশোধ</th><th>মোট বাকি</th></tr></thead><tbody>${rows}</tbody><tfoot><tr class="total-row"><td colspan="2">সর্বমোট</td>${monthTotals}<td>${Number(totalPaid(y)).toLocaleString('bn-BD')}</td><td>${Number(totalDue(y)).toLocaleString('bn-BD')}</td></tr></tfoot></table></div><div class="member-summary"><div>মোট পরিশোধ<strong>${money(totalPaid(y))}</strong></div><div>মোট বাকি<strong>${money(totalDue(y))}</strong></div></div><div class="result-download"><button class="download-btn" type="button" onclick="downloadAllMembersReport()">⬇️ বিস্তারিত হিসাব ডাউনলোড</button></div>`;
   }
   function renderTotal(){
     const deposit=totalPaid('all'),profit=totalProfit('all'),expense=totalExpense('all');
@@ -385,6 +418,7 @@ function findMemberById(id){return mainData.members.find(m=>String(m.id)===Strin
   $('memberMenuClose').onclick=()=>setMemberMenu(false);
   $('memberMenuOverlay').onclick=()=>setMemberMenu(false);
   document.querySelectorAll('#memberMobileMenu a').forEach(a=>a.addEventListener('click',()=>setMemberMenu(false)));
+  window.downloadPersonalReport=downloadPersonalReport;window.downloadAllMembersReport=downloadAllMembersReport;
   $('memberMenuLogout').onclick=e=>{e.preventDefault();logout();};
   document.querySelectorAll('#memberMobileMenu a[data-member-view]').forEach(a=>a.addEventListener('click',e=>{e.preventDefault();showMemberView(a.dataset.memberView);}));
   window.addEventListener('hashchange',()=>{const v=location.hash.replace('#','');if(['myAccount','personal','members','due','profitExpenseDetails','fund','notices'].includes(v)&&!$('dashboard').hidden)showMemberView(v);});

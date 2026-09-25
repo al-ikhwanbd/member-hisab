@@ -8,3 +8,7 @@
 .member-auth-chooser{display:grid;gap:12px;margin-top:18px}.member-auth-chooser .btn{min-height:52px}.auth-back,.auth-secondary{margin-top:10px}.auth-secondary{border:1px solid var(--border)}
 
 #memberMobileMenu{display:flex;flex-direction:column;position:fixed;z-index:1001;top:0;right:-100%;width:min(280px,62vw);height:100vh;background:#fff;color:var(--text);padding:76px 22px 28px;box-shadow:-12px 0 35px rgba(0,0,0,.18);transition:right .28s ease;overflow-y:auto;visibility:hidden;pointer-events:none}#memberMobileMenu.open{right:0;visibility:visible;pointer-events:auto}#memberMobileMenu a{display:flex;align-items:center;gap:12px;text-decoration:none;color:#111;text-align:left;font-size:18px;font-weight:600;padding:16px 14px;margin:2px 0;border-radius:12px}#memberMobileMenu a span{width:28px;text-align:center;font-size:21px}#memberMobileMenu a:hover{background:var(--green-soft);color:var(--green)}#memberMobileMenu .menu-close{position:absolute;top:16px;right:16px;border:0;background:transparent;font-size:32px;cursor:pointer}.member-menu-btn{margin-left:auto}
+
+/* Member dashboard cleanup: approved member sees only the requested account sections. */
+.member-dashboard-head,.member-card > .profile-grid{display:none!important}
+#memberLogout{display:none!important}
