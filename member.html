@@ -8,7 +8,7 @@
 <link rel="icon" type="image/png" href="favicon.png">
 <link rel="apple-touch-icon" href="icon-192.png">
 <link rel="stylesheet" href="style.css?v=46">
-<link rel="stylesheet" href="member-auth.css?v=9">
+<link rel="stylesheet" href="member-auth.css?v=10">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <title>সদস্য অ্যাকাউন্ট — আল ইখওয়ান ইসলামী সংস্থা বাংলাদেশ</title>
 </head>
@@ -49,7 +49,7 @@
     <div id="loginPanel" hidden>
       <form id="loginForm" class="member-form">
         <label>সদস্যের নাম <b>*</b><select id="loginMember" name="member_id" required><option value="">-- সদস্যের নাম নির্বাচন করুন --</option></select></label>
-        <label>পাসওয়ার্ড <b>*</b><input name="password" required type="password" autocomplete="current-password" placeholder="পাসওয়ার্ড"></label>
+        <label>পাসওয়ার্ড <b>*</b><span class="password-field"><input name="password" required type="password" autocomplete="current-password" placeholder="পাসওয়ার্ড"><button class="password-toggle" type="button" data-password-toggle aria-label="পাসওয়ার্ড দেখুন">👁️</button></span></label>
         <button class="btn btn-primary full" type="submit">🔐 সদস্য লগইন</button>
       </form>
       <button id="loginBack" class="btn btn-light full auth-back" type="button">← আগের পেজে ফিরে যান</button>
@@ -61,7 +61,7 @@
         <label>সদস্যের নাম <b>*</b><select id="signupMember" name="member_id" required><option value="">-- সদস্যের নাম নির্বাচন করুন --</option></select></label>
         <label>ঠিকানা <b>*</b><textarea name="address" required minlength="2" autocomplete="street-address" placeholder="আপনার ঠিকানা"></textarea></label>
         <label>মোবাইল নম্বর <b>*</b><input id="signupMobile" name="mobile" inputmode="tel" autocomplete="tel" placeholder="01XXXXXXXXX"></label>
-        <label>পাসওয়ার্ড <b>*</b><input name="password" required type="password" minlength="6" autocomplete="new-password" placeholder="কমপক্ষে ৬ অক্ষর"></label>
+        <label>পাসওয়ার্ড <b>*</b><span class="password-field"><input name="password" required type="password" minlength="6" autocomplete="new-password" placeholder="কমপক্ষে ৬ অক্ষর"><button class="password-toggle" type="button" data-password-toggle aria-label="পাসওয়ার্ড দেখুন">👁️</button></span></label>
         <button class="btn btn-primary full" type="submit">📝 অ্যাকাউন্ট তৈরি করুন</button>
       </form>
       <button id="signupBack" class="btn btn-light full auth-back" type="button">← আগের পেজে ফিরে যান</button>
@@ -80,14 +80,11 @@
     <div id="memberProfile" class="profile-grid"></div>
 
     <section id="myAccount" class="member-view page-section">
-      <div class="section-title">
-        <span class="title-icon">🧾</span>
-        <div><h2>আমার হিসাব</h2><p>আপনার সকল বছরের হিসাবের সংক্ষিপ্ত বিবরণ</p></div>
-      </div>
       <div id="myAccountResult" class="report-output"><div class="loading">হিসাব লোড হচ্ছে...</div></div>
     </section>
 
     <section id="personal" class="member-view page-section active">
+      <div id="memberHomeSummary" class="member-home-summary"><div class="loading">হিসাব লোড হচ্ছে...</div></div>
       <div class="section-title">
         <span class="title-icon">👤</span>
         <div><h2>সদস্যদের ব্যক্তিগত হিসাব</h2><p>সাল ও সদস্য নির্বাচন করে ব্যক্তিগত হিসাব দেখুন</p></div>
@@ -136,7 +133,7 @@
     <div class="section-title"><span class="title-icon">🔐</span><div><h2>মেম্বার অনুমোদন</h2><p>শুধু অনুমোদিত অ্যাডমিনের জন্য — এখান থেকে সদস্য অনুমোদন ও হিসাবের দৃশ্যমানতা নিয়ন্ত্রণ করা যাবে</p></div></div>
     <form id="adminLoginForm" class="member-form">
       <label>অ্যাডমিন ইমেইল<input name="email" type="email" required autocomplete="username"></label>
-      <label>পাসওয়ার্ড<input name="password" type="password" required autocomplete="current-password"></label>
+      <label>পাসওয়ার্ড<span class="password-field"><input name="password" type="password" required autocomplete="current-password"><button class="password-toggle" type="button" data-password-toggle aria-label="পাসওয়ার্ড দেখুন">👁️</button></span></label>
       <button class="btn btn-primary full">অ্যাডমিন লগইন</button>
     </form>
     <div id="adminMsg" class="message"></div>
@@ -146,6 +143,6 @@
 </main>
 <footer><div class="container">© <span id="footerYear"></span> আল ইখওয়ান ইসলামী সংস্থা বাংলাদেশ<div class="footer-sub">সদস্য অ্যাকাউন্ট</div></div></footer>
 <script src="member-auth-config.js?v=3"></script>
-<script src="member-auth.js?v=9"></script>
+<script src="member-auth.js?v=10"></script>
 </body>
 </html>

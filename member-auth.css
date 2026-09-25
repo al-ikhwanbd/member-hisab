@@ -12,3 +12,18 @@
 /* Member dashboard cleanup: approved member sees only the requested account sections. */
 .member-dashboard-head,.member-card > .profile-grid{display:none!important}
 #memberLogout{display:none!important}
+
+
+/* Member account summary: same four-card presentation used in the main হিসাব view. */
+.member-home-summary{margin-bottom:20px}
+.member-summary-heading{display:flex;align-items:center;gap:12px;background:var(--green-soft);border-radius:16px;padding:16px 18px;margin-bottom:18px}
+.member-summary-heading .title-icon{flex:0 0 auto}
+.member-summary-heading h2{margin:0;color:var(--green-dark);font-size:24px}
+.member-summary-heading p{margin:4px 0 0;color:var(--muted)}
+.member-home-summary-grid{margin:0 0 18px}
+.member-home-summary-grid article{min-height:108px;display:flex;flex-direction:column;justify-content:center}
+.member-home-summary-grid article strong{font-size:28px}
+@media(max-width:700px){.member-home-summary-grid{grid-template-columns:1fr 1fr}.member-home-summary-heading{padding:14px}.member-summary-heading h2{font-size:21px}}
+@media(max-width:420px){.member-home-summary-grid{grid-template-columns:1fr 1fr}.member-home-summary-grid article{min-height:100px;padding:12px 8px}.member-home-summary-grid article span{font-size:12px}.member-home-summary-grid article strong{font-size:23px}.member-summary-heading h2{font-size:19px}}
+
+.password-field{position:relative;display:block}.password-field input{padding-right:48px!important}.password-toggle{position:absolute;right:7px;top:50%;transform:translateY(-50%);border:0;background:transparent;color:var(--muted);font-size:20px;line-height:1;padding:7px;cursor:pointer;border-radius:8px}.password-toggle:hover{background:#eef7f2}.password-toggle:focus{outline:2px solid rgba(8,127,78,.18)}

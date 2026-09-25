@@ -11,13 +11,14 @@
   let selectableMembers=[];
   const memberReady=window.MEMBER_SUPABASE_URL&&window.MEMBER_SUPABASE_ANON_KEY&&window.supabase;
   const mainReady=window.MAIN_SUPABASE_URL&&window.MAIN_SUPABASE_ANON_KEY&&window.supabase;
-  const sb=memberReady?window.supabase.createClient(window.MEMBER_SUPABASE_URL,window.MEMBER_SUPABASE_ANON_KEY):null;
+  const sb=memberReady?window.supabase.createClient(window.MEMBER_SUPABASE_URL,window.MEMBER_SUPABASE_ANON_KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}}):null;
   const mainSb=mainReady?window.supabase.createClient(window.MAIN_SUPABASE_URL,window.MAIN_SUPABASE_ANON_KEY):null;
   let currentProfile=null;
   let currentMainMember=null;
   let mainData={members:[],payments:[],profits:[],expenses:[],assets:[],notices:[]};
   const DEFAULT_MONTHLY_REQUIRED=500;
   let monthlyRequired=DEFAULT_MONTHLY_REQUIRED;
+  let currentDividendPublic=false;
 
   function msg(text,ok=false,id='authMsg'){const el=$(id);if(!el)return;el.textContent=text;el.className='message '+(ok?'success':'error');}
   function showChooser(){
@@ -228,12 +229,25 @@ function findMemberById(id){return mainData.members.find(m=>String(m.id)===Strin
       memEl.value=String(currentMainMember.id);
     }
   }
+  function currentMemberSummaryHtml(){
+    if(!currentMainMember)return '';
+    const paid=memberPaid(currentMainMember,'all');
+    const due=memberDue(currentMainMember,'all');
+    const dividend=currentDividendPublic?memberDividend(currentMainMember):null;
+    const payable=paid+(dividend===null?0:dividend);
+    return `<div class="member-summary-heading"><span class="title-icon">📊</span><div><h2>সকল বছরের মোট হিসাব</h2><p>আপনার সকল বছরের হিসাবের সংক্ষিপ্ত বিবরণ</p></div></div>
+      <div class="summary-grid member-home-summary-grid">
+        <article><span>মোট পরিশোধ</span><strong>${money(paid)}</strong></article>
+        <article><span>মোট বাকি</span><strong>${money(due)}</strong></article>
+        <article><span>মোট লভ্যাংশ</span><strong>${dividend===null?'গোপন':money(dividend)}</strong></article>
+        <article class="highlight"><span>সর্বমোট প্রাপ্য</span><strong>${money(payable)}</strong></article>
+      </div>
+      <div class="result-download"><button class="download-btn" type="button" onclick="downloadCurrentMemberAllYearsReport()">⬇️ বিস্তারিত হিসাব ডাউনলোড</button></div>`;
+  }
   function renderMyAccount(){
     const result=$('myAccountResult');
     if(!result||!currentMainMember)return;
-    const ys=years();
-    const rows=ys.map(y=>`<tr><td>${esc(y)}</td><td>${money(memberPaid(currentMainMember,y))}</td><td>${money(memberDue(currentMainMember,y))}</td></tr>`).join('');
-    result.innerHTML=`<div class="summary-grid personal-total-summary"><article><span>সকল বছরের মোট পরিশোধ</span><strong>${money(memberPaid(currentMainMember,'all'))}</strong></article><article><span>সকল বছরের মোট বাকি</span><strong>${money(memberDue(currentMainMember,'all'))}</strong></article></div><div class="table-wrap"><table><thead><tr><th>সাল</th><th>মোট পরিশোধ</th><th>মোট বাকি</th></tr></thead><tbody>${rows||'<tr><td colspan="3">কোনো হিসাব পাওয়া যায়নি</td></tr>'}</tbody><tfoot><tr class="total-row"><td>সর্বমোট</td><td>${money(memberPaid(currentMainMember,'all'))}</td><td>${money(memberDue(currentMainMember,'all'))}</td></tr></tfoot></table></div>`;
+    result.innerHTML=currentMemberSummaryHtml();
   }
   function downloadHtmlFile(filename,html){
     const blob=new Blob([html],{type:'text/html;charset=utf-8'});
@@ -266,6 +280,19 @@ function findMemberById(id){return mainData.members.find(m=>String(m.id)===Strin
     const monthTotals=months.map((_,mi)=>mainData.payments.filter(p=>isCountablePayment(p)&&String(p.year)===String(y)&&Number(p.month)===mi+1).reduce((s,p)=>s+Number(p.paid_amount||0),0)).map(x=>`<td>${x>0?Number(x).toLocaleString('bn-BD'):''}</td>`).join('');
     const body=`<div class="table-wrap"><table><thead><tr><th>ক্রমিক</th><th class="name">সদস্যের নাম</th>${months.map(m=>`<th>${m}</th>`).join('')}<th>মোট পরিশোধ</th><th>মোট বাকি</th></tr></thead><tbody>${rows}</tbody><tfoot><tr class="total-row"><td colspan="2">সর্বমোট</td>${monthTotals}<td>${Number(totalPaid(y)).toLocaleString('bn-BD')}</td><td>${Number(totalDue(y)).toLocaleString('bn-BD')}</td></tr></tfoot></table></div>`;
     downloadHtmlFile(`all-members-${y}.html`,reportShell(`${y} সালের সকল সদস্যদের হিসাব`,'প্রতি মাসে শুধু পরিশোধের পরিমাণ দেখানো হয়েছে',body,true));
+  }
+
+  function renderMemberHomeSummary(){
+    const result=$('memberHomeSummary');
+    if(!result||!currentMainMember)return;
+    result.innerHTML=currentMemberSummaryHtml();
+  }
+  function downloadCurrentMemberAllYearsReport(){
+    if(!currentMainMember)return;
+    const y=$('personalYear'),id=$('personalMember');
+    if(y)y.value='all';
+    if(id)id.value=String(currentMainMember.id);
+    downloadPersonalReport();
   }
 
   function renderPersonal(){
@@ -337,16 +364,34 @@ function findMemberById(id){return mainData.members.find(m=>String(m.id)===Strin
       const result=$('allMembersResult');
       result.innerHTML='<div class="empty-state">সকল সদস্যদের হিসাব বর্তমানে Public করা হয়নি।</div>';
     }
-    const divPublic=await getDividendPublic(currentMainMember.id);
-    const divNote=divPublic?'':'';
+    currentDividendPublic=await getDividendPublic(currentMainMember.id);
     const y=$('personalYear'); if(y)y.value='all';
     const pm=$('personalMember'); if(pm)pm.value=String(currentMainMember.id);
     renderMyAccount();
+    renderMemberHomeSummary();
     renderPersonal();
     const hash=location.hash.replace('#','');
     showMemberView(['myAccount','personal','members','due','profitExpenseDetails','fund','notices'].includes(hash)?hash:'personal');
   }
   async function logout(){if(sb)await sb.auth.signOut();currentProfile=null;currentMainMember=null;showOnly('auth');showChooser();}
+  async function isCurrentUserAdmin(){
+    if(!sb)return false;
+    const {data:{session}}=await sb.auth.getSession();
+    if(!session?.user)return false;
+    const {data,error}=await sb.from('member_admins').select('user_id').eq('user_id',session.user.id).maybeSingle();
+    return !error && !!data;
+  }
+  async function showAdminAuthenticated(){
+    const form=$('adminLoginForm');
+    if(form)form.hidden=true;
+    await loadPending();
+  }
+  async function loadAdminSession(){
+    if(!sb)return;
+    const {data:{session}}=await sb.auth.getSession();
+    if(!session?.user)return;
+    if(await isCurrentUserAdmin())await showAdminAuthenticated();
+  }
   async function adminLogin(e){
     e.preventDefault();
     const form=e.currentTarget;if(!sb){msg('Member Supabase configuration পাওয়া যায়নি।','adminMsg');return;}
@@ -355,7 +400,7 @@ function findMemberById(id){return mainData.members.find(m=>String(m.id)===Strin
     if(error){msg(error.message,false,'adminMsg');return}
     const {data:au,error:ae}=await sb.from('member_admins').select('user_id').eq('user_id',data.user.id).maybeSingle();
     if(ae||!au){await sb.auth.signOut();msg('এই অ্যাকাউন্টে অ্যাডমিন অনুমতি নেই।',false,'adminMsg');return}
-    form.hidden=true;await loadPending();
+    await showAdminAuthenticated();
   }
   async function loadPending(){
     const box=$('pendingMembers');box.hidden=false;const publicAll=await getVisibility();
@@ -372,6 +417,21 @@ function findMemberById(id){return mainData.members.find(m=>String(m.id)===Strin
     box.innerHTML=controls+`<div class="admin-link-box"><b>নতুন নিয়ম:</b> সদস্য সাইন আপের সময় মূল সদস্য তালিকা থেকে নিজের নাম নির্বাচন করবে। অ্যাডমিন তথ্য যাচাই করে একই সদস্যকে অ্যাকাউন্টের সঙ্গে যুক্ত করে অনুমোদন করবেন। লগইনের সময় সদস্যের নাম ও পাসওয়ার্ড ব্যবহার হবে।</div><table><thead><tr><th>সাইন আপ নাম</th><th>ঠিকানা</th><th>লগইন তথ্য</th><th>মূল সদস্য</th><th>তারিখ</th><th>অ্যাকশন</th></tr></thead><tbody>${rows||'<tr><td colspan="6">কোনো Pending account নেই</td></tr>'}</tbody></table>`;
     await loadLinkedMembers(membersList||[]);
   }
+  function getAdminSavedMemberPasswords(){
+    try{return JSON.parse(localStorage.getItem('member_admin_saved_passwords')||'{}')||{}}catch(_){return {}}
+  }
+  function saveAdminMemberPassword(userId,password){
+    try{const all=getAdminSavedMemberPasswords();all[String(userId)]={password:String(password),saved_at:new Date().toISOString()};localStorage.setItem('member_admin_saved_passwords',JSON.stringify(all));}catch(_){}
+  }
+  function getSavedPasswordCell(userId){
+    const rec=getAdminSavedMemberPasswords()[String(userId)];
+    if(!rec?.password)return '<span class="muted">এখনো সংরক্ষিত নেই</span>';
+    const id='saved_pass_'+String(userId).replace(/[^a-zA-Z0-9_-]/g,'_');
+    return `<span class="saved-pass-wrap"><input id="${id}" type="password" value="${esc(rec.password)}" readonly style="width:120px;max-width:100%;"><button type="button" class="small-btn" onclick="window.toggleSavedMemberPassword('${id}',this)">👁️</button></span>`;
+  }
+  function toggleSavedMemberPassword(id,btn){
+    const input=$(id);if(!input)return;const show=input.type==='password';input.type=show?'text':'password';btn.textContent=show?'🙈':'👁️';
+  }
   async function loadLinkedMembers(membersList=[]){
     const box=$('linkedMembers'); if(!box)return; box.hidden=false;
     const {data:links,error}=await sb.from('member_account_links').select('member_user_id,main_member_id,updated_at');
@@ -379,8 +439,8 @@ function findMemberById(id){return mainData.members.find(m=>String(m.id)===Strin
     const profiles={};
     const ids=(links||[]).map(x=>x.member_user_id);
     if(ids.length){const {data:ps}=await sb.from('member_profiles').select('id,full_name,mobile,status').in('id',ids);(ps||[]).forEach(x=>profiles[x.id]=x);}
-    const rows=(links||[]).map((l,i)=>{const p=profiles[l.member_user_id]||{};const m=(membersList||[]).find(x=>String(x.id)===String(l.main_member_id))||{};return `<tr><td>${i+1}</td><td>${esc(p.full_name||'')}</td><td>${esc(p.mobile||'')}</td><td>${esc(m.name||'')}</td><td>${p.status==='approved'?'অনুমোদিত':esc(p.status||'')}</td></tr>`}).join('');
-    box.innerHTML=`<h3>🔗 যুক্ত করা সদস্য অ্যাকাউন্ট</h3><table><thead><tr><th>ক্রম</th><th>অ্যাকাউন্ট নাম</th><th>লগইন তথ্য</th><th>মূল সদস্য</th><th>অবস্থা</th></tr></thead><tbody>${rows||'<tr><td colspan="5">এখনো কোনো অ্যাকাউন্ট যুক্ত করা হয়নি।</td></tr>'}</tbody></table>`;
+    const rows=(links||[]).map((l,i)=>{const p=profiles[l.member_user_id]||{};const m=(membersList||[]).find(x=>String(x.id)===String(l.main_member_id))||{};return `<tr><td>${i+1}</td><td>${esc(p.full_name||'')}</td><td>${esc(p.mobile||'')}</td><td>${esc(m.name||'')}</td><td>${p.status==='approved'?'অনুমোদিত':esc(p.status||'')}</td><td>${getSavedPasswordCell(l.member_user_id)}<br><button class="small-btn approve" type="button" onclick="window.memberResetPassword('${esc(l.member_user_id)}','${esc(p.full_name||'সদস্য')}')">🔑 নতুন পাসওয়ার্ড সেট</button></td></tr>`}).join('');
+    box.innerHTML=`<h3>🔗 যুক্ত করা সদস্য অ্যাকাউন্ট</h3><div class="admin-link-box">🔐 কোনো সদস্য পাসওয়ার্ড ভুলে গেলে এখানে নতুন পাসওয়ার্ড সেট করতে পারবেন। Admin যে নতুন পাসওয়ার্ড সেট করবেন, সেটি এই Admin ব্রাউজারের প্যানেলে সংরক্ষিত থাকবে এবং 👁️ দিয়ে দেখা যাবে। পুরোনো পাসওয়ার্ড উদ্ধার করা হয় না।</div><table><thead><tr><th>ক্রম</th><th>অ্যাকাউন্ট নাম</th><th>লগইন তথ্য</th><th>মূল সদস্য</th><th>অবস্থা</th><th>পাসওয়ার্ড</th></tr></thead><tbody>${rows||'<tr><td colspan="6">এখনো কোনো অ্যাকাউন্ট যুক্ত করা হয়নি।</td></tr>'}</tbody></table>`;
   }
   async function setStatus(id,status){
     if(status==='approved'){
@@ -413,12 +473,39 @@ function findMemberById(id){return mainData.members.find(m=>String(m.id)===Strin
     const {error}=await sb.from('member_profiles').update({status,approved_at:status==='approved'?new Date().toISOString():null}).eq('id',id).eq('status','pending');
     if(error){msg(error.message,false,'adminMsg');return}await loadPending();
   }
+  async function adminResetMemberPassword(userId,memberName){
+    if(!sb)return;
+    const sessionResult=await sb.auth.getSession();
+    const session=sessionResult?.data?.session;
+    if(!session?.access_token){msg('অ্যাডমিন সেশন পাওয়া যায়নি। আবার অ্যাডমিন লগইন করুন।',false,'adminMsg');return}
+    const first=prompt(`${memberName||'সদস্য'}-এর জন্য নতুন পাসওয়ার্ড দিন (কমপক্ষে ৬ অক্ষর):`,'');
+    if(first===null)return;
+    const password=String(first);
+    if(password.length<6){msg('নতুন পাসওয়ার্ড কমপক্ষে ৬ অক্ষরের হতে হবে।',false,'adminMsg');return}
+    const second=prompt('নতুন পাসওয়ার্ডটি আবার লিখুন:', '');
+    if(second===null)return;
+    if(password!==String(second)){msg('দুইবার দেওয়া পাসওয়ার্ড এক নয়।',false,'adminMsg');return}
+    try{
+      const fnUrl=`${window.MEMBER_SUPABASE_URL}/functions/v1/admin-reset-member-password`;
+      const res=await fetch(fnUrl,{method:'POST',headers:{'Content-Type':'application/json','Authorization':`Bearer ${session.access_token}`},body:JSON.stringify({member_user_id:userId,new_password:password})});
+      const body=await res.json().catch(()=>({}));
+      if(!res.ok)throw new Error(body.error||body.message||'পাসওয়ার্ড পরিবর্তন করা যায়নি।');
+      saveAdminMemberPassword(userId,password);
+      msg('সদস্যের নতুন পাসওয়ার্ড সফলভাবে সেট করা হয়েছে এবং এই Admin ব্রাউজারের প্যানেলে সংরক্ষণ করা হয়েছে।',true,'adminMsg');
+      const linkedBox=$('linkedMembers'); if(linkedBox && !linkedBox.hidden){
+        const {data:ml}=await mainSb.from('members').select('id,name,serial_no,mobile,status').eq('status','active').order('serial_no',{ascending:true,nullsFirst:false}).order('created_at');
+        await loadLinkedMembers(ml||[]);
+      }
+    }catch(err){msg(`পাসওয়ার্ড সেট করা যায়নি: ${err.message||'সার্ভার/সেটআপ পরীক্ষা করুন।'}`,false,'adminMsg')}
+  }
   window.memberApprove=id=>setStatus(id,'approved');window.memberReject=id=>setStatus(id,'rejected');
+  window.memberResetPassword=adminResetMemberPassword;
+  window.toggleSavedMemberPassword=toggleSavedMemberPassword;
   $('memberMenuBtn').onclick=()=>setMemberMenu(true);
   $('memberMenuClose').onclick=()=>setMemberMenu(false);
   $('memberMenuOverlay').onclick=()=>setMemberMenu(false);
   document.querySelectorAll('#memberMobileMenu a').forEach(a=>a.addEventListener('click',()=>setMemberMenu(false)));
-  window.downloadPersonalReport=downloadPersonalReport;window.downloadAllMembersReport=downloadAllMembersReport;
+  window.downloadPersonalReport=downloadPersonalReport;window.downloadAllMembersReport=downloadAllMembersReport;window.downloadCurrentMemberAllYearsReport=downloadCurrentMemberAllYearsReport;
   $('memberMenuLogout').onclick=e=>{e.preventDefault();logout();};
   document.querySelectorAll('#memberMobileMenu a[data-member-view]').forEach(a=>a.addEventListener('click',e=>{e.preventDefault();showMemberView(a.dataset.memberView);}));
   window.addEventListener('hashchange',()=>{const v=location.hash.replace('#','');if(['myAccount','personal','members','due','profitExpenseDetails','fund','notices'].includes(v)&&!$('dashboard').hidden)showMemberView(v);});
@@ -431,6 +518,14 @@ function findMemberById(id){return mainData.members.find(m=>String(m.id)===Strin
   $('loginToSignup').onclick=()=>openAuthPanel('signup');
   $('signupToLogin').onclick=()=>openAuthPanel('login');
   $('signupForm').onsubmit=signUp;$('loginForm').onsubmit=signIn;$('memberLogout').onclick=logout;$('pendingLogout').onclick=logout;$('adminLoginForm').onsubmit=adminLogin;$('footerYear').textContent=new Date().getFullYear();
+  document.querySelectorAll('[data-password-toggle]').forEach(btn=>btn.addEventListener('click',()=>{
+    const input=btn.parentElement?.querySelector('input');
+    if(!input)return;
+    const showing=input.type==='text';
+    input.type=showing?'password':'text';
+    btn.textContent=showing?'👁️':'🙈';
+    btn.setAttribute('aria-label',showing?'পাসওয়ার্ড দেখুন':'পাসওয়ার্ড লুকান');
+  }));
   const isAdminRoute=location.hash==='#admin';
   if(isAdminRoute){
     $('authCard').hidden=true;$('pendingCard').hidden=true;$('dashboard').hidden=true;$('adminPanel').hidden=false;
@@ -438,6 +533,6 @@ function findMemberById(id){return mainData.members.find(m=>String(m.id)===Strin
     $('adminPanel').hidden=true;
     showChooser();
   }
-  if(!sb||!mainSb){msg('প্রয়োজনীয় Supabase configuration পাওয়া যায়নি।',false);}else if(!isAdminRoute){loadSelectableMembers();loadSession();}else{loadSelectableMembers();}
+  if(!sb||!mainSb){msg('প্রয়োজনীয় Supabase configuration পাওয়া যায়নি।',false);}else if(!isAdminRoute){loadSelectableMembers();loadSession();}else{loadSelectableMembers();loadAdminSession();}
 
 })();
