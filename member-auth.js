@@ -252,6 +252,10 @@ function findMemberById(id){return mainData.members.find(m=>String(m.id)===Strin
     const totalExpenseAmount=totalExpense('all');
     const remainingFundAmount=totalDeposit+totalProfitAmount-totalExpenseAmount;
     return `<div class="my-account-home">
+      <div class="section-title">
+        <span class="title-icon">🧾</span>
+        <div><h2>আমার হিসাব</h2><p>সকল বছরের মোট হিসাব</p></div>
+      </div>
       <div class="my-account-member-title">
         <h2>${esc(currentMainMember.name)}</h2>
         <p>সকল বছরের মোট হিসাব</p>
