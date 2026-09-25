@@ -21,10 +21,3 @@ Deploy-এর পরে Function-টি এই URL-এ থাকবে:
 **গুরুত্বপূর্ণ:** Service Role Key কখনো `member-auth.js`, HTML বা public JavaScript-এ বসাবেন না।
 
 Function deploy না করা পর্যন্ত নতুন বাটনটি দেখাবে, কিন্তু চাপলে সেটআপ/Function সংক্রান্ত error দেখাবে। বাকি Member ও Admin সিস্টেম আগের মতো চলবে।
-
-
-## নতুন: Admin Panel-এ সর্বশেষ সেট করা পাসওয়ার্ড সংরক্ষণ
-
-Admin কোনো সদস্যের জন্য নতুন পাসওয়ার্ড সেট করলে **সর্বশেষ সেট করা পাসওয়ার্ডটি ওই Admin ব্রাউজারের localStorage-এ সংরক্ষিত থাকে**। যুক্ত করা সদস্য অ্যাকাউন্ট তালিকায় 👁️ চাপলে সেটি দেখা যাবে। এটি Supabase database-এ plain-text password হিসেবে রাখা হয় না।
-
-অন্য ব্রাউজার/অন্য ডিভাইসে এই সংরক্ষিত password দেখা যাবে না। Browser data/site data মুছে দিলে সংরক্ষিত password-ও মুছে যেতে পারে।

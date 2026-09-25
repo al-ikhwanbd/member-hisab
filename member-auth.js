@@ -417,21 +417,6 @@ function findMemberById(id){return mainData.members.find(m=>String(m.id)===Strin
     box.innerHTML=controls+`<div class="admin-link-box"><b>নতুন নিয়ম:</b> সদস্য সাইন আপের সময় মূল সদস্য তালিকা থেকে নিজের নাম নির্বাচন করবে। অ্যাডমিন তথ্য যাচাই করে একই সদস্যকে অ্যাকাউন্টের সঙ্গে যুক্ত করে অনুমোদন করবেন। লগইনের সময় সদস্যের নাম ও পাসওয়ার্ড ব্যবহার হবে।</div><table><thead><tr><th>সাইন আপ নাম</th><th>ঠিকানা</th><th>লগইন তথ্য</th><th>মূল সদস্য</th><th>তারিখ</th><th>অ্যাকশন</th></tr></thead><tbody>${rows||'<tr><td colspan="6">কোনো Pending account নেই</td></tr>'}</tbody></table>`;
     await loadLinkedMembers(membersList||[]);
   }
-  function getAdminSavedMemberPasswords(){
-    try{return JSON.parse(localStorage.getItem('member_admin_saved_passwords')||'{}')||{}}catch(_){return {}}
-  }
-  function saveAdminMemberPassword(userId,password){
-    try{const all=getAdminSavedMemberPasswords();all[String(userId)]={password:String(password),saved_at:new Date().toISOString()};localStorage.setItem('member_admin_saved_passwords',JSON.stringify(all));}catch(_){}
-  }
-  function getSavedPasswordCell(userId){
-    const rec=getAdminSavedMemberPasswords()[String(userId)];
-    if(!rec?.password)return '<span class="muted">এখনো সংরক্ষিত নেই</span>';
-    const id='saved_pass_'+String(userId).replace(/[^a-zA-Z0-9_-]/g,'_');
-    return `<span class="saved-pass-wrap"><input id="${id}" type="password" value="${esc(rec.password)}" readonly style="width:120px;max-width:100%;"><button type="button" class="small-btn" onclick="window.toggleSavedMemberPassword('${id}',this)">👁️</button></span>`;
-  }
-  function toggleSavedMemberPassword(id,btn){
-    const input=$(id);if(!input)return;const show=input.type==='password';input.type=show?'text':'password';btn.textContent=show?'🙈':'👁️';
-  }
   async function loadLinkedMembers(membersList=[]){
     const box=$('linkedMembers'); if(!box)return; box.hidden=false;
     const {data:links,error}=await sb.from('member_account_links').select('member_user_id,main_member_id,updated_at');
@@ -439,8 +424,8 @@ function findMemberById(id){return mainData.members.find(m=>String(m.id)===Strin
     const profiles={};
     const ids=(links||[]).map(x=>x.member_user_id);
     if(ids.length){const {data:ps}=await sb.from('member_profiles').select('id,full_name,mobile,status').in('id',ids);(ps||[]).forEach(x=>profiles[x.id]=x);}
-    const rows=(links||[]).map((l,i)=>{const p=profiles[l.member_user_id]||{};const m=(membersList||[]).find(x=>String(x.id)===String(l.main_member_id))||{};return `<tr><td>${i+1}</td><td>${esc(p.full_name||'')}</td><td>${esc(p.mobile||'')}</td><td>${esc(m.name||'')}</td><td>${p.status==='approved'?'অনুমোদিত':esc(p.status||'')}</td><td>${getSavedPasswordCell(l.member_user_id)}<br><button class="small-btn approve" type="button" onclick="window.memberResetPassword('${esc(l.member_user_id)}','${esc(p.full_name||'সদস্য')}')">🔑 নতুন পাসওয়ার্ড সেট</button></td></tr>`}).join('');
-    box.innerHTML=`<h3>🔗 যুক্ত করা সদস্য অ্যাকাউন্ট</h3><div class="admin-link-box">🔐 কোনো সদস্য পাসওয়ার্ড ভুলে গেলে এখানে নতুন পাসওয়ার্ড সেট করতে পারবেন। Admin যে নতুন পাসওয়ার্ড সেট করবেন, সেটি এই Admin ব্রাউজারের প্যানেলে সংরক্ষিত থাকবে এবং 👁️ দিয়ে দেখা যাবে। পুরোনো পাসওয়ার্ড উদ্ধার করা হয় না।</div><table><thead><tr><th>ক্রম</th><th>অ্যাকাউন্ট নাম</th><th>লগইন তথ্য</th><th>মূল সদস্য</th><th>অবস্থা</th><th>পাসওয়ার্ড</th></tr></thead><tbody>${rows||'<tr><td colspan="6">এখনো কোনো অ্যাকাউন্ট যুক্ত করা হয়নি।</td></tr>'}</tbody></table>`;
+    const rows=(links||[]).map((l,i)=>{const p=profiles[l.member_user_id]||{};const m=(membersList||[]).find(x=>String(x.id)===String(l.main_member_id))||{};return `<tr><td>${i+1}</td><td>${esc(p.full_name||'')}</td><td>${esc(p.mobile||'')}</td><td>${esc(m.name||'')}</td><td>${p.status==='approved'?'অনুমোদিত':esc(p.status||'')}</td><td><button class="small-btn approve" type="button" onclick="window.memberResetPassword('${esc(l.member_user_id)}','${esc(p.full_name||'সদস্য')}')">🔑 নতুন পাসওয়ার্ড সেট</button></td></tr>`}).join('');
+    box.innerHTML=`<h3>🔗 যুক্ত করা সদস্য অ্যাকাউন্ট</h3><div class="admin-link-box">🔐 কোনো সদস্য পাসওয়ার্ড ভুলে গেলে এখানে তার জন্য নতুন পাসওয়ার্ড সেট করতে পারবেন। পুরোনো পাসওয়ার্ড অ্যাডমিনকে দেখানো হয় না।</div><table><thead><tr><th>ক্রম</th><th>অ্যাকাউন্ট নাম</th><th>লগইন তথ্য</th><th>মূল সদস্য</th><th>অবস্থা</th><th>পাসওয়ার্ড</th></tr></thead><tbody>${rows||'<tr><td colspan="6">এখনো কোনো অ্যাকাউন্ট যুক্ত করা হয়নি।</td></tr>'}</tbody></table>`;
   }
   async function setStatus(id,status){
     if(status==='approved'){
@@ -490,17 +475,11 @@ function findMemberById(id){return mainData.members.find(m=>String(m.id)===Strin
       const res=await fetch(fnUrl,{method:'POST',headers:{'Content-Type':'application/json','Authorization':`Bearer ${session.access_token}`},body:JSON.stringify({member_user_id:userId,new_password:password})});
       const body=await res.json().catch(()=>({}));
       if(!res.ok)throw new Error(body.error||body.message||'পাসওয়ার্ড পরিবর্তন করা যায়নি।');
-      saveAdminMemberPassword(userId,password);
-      msg('সদস্যের নতুন পাসওয়ার্ড সফলভাবে সেট করা হয়েছে এবং এই Admin ব্রাউজারের প্যানেলে সংরক্ষণ করা হয়েছে।',true,'adminMsg');
-      const linkedBox=$('linkedMembers'); if(linkedBox && !linkedBox.hidden){
-        const {data:ml}=await mainSb.from('members').select('id,name,serial_no,mobile,status').eq('status','active').order('serial_no',{ascending:true,nullsFirst:false}).order('created_at');
-        await loadLinkedMembers(ml||[]);
-      }
+      msg('সদস্যের নতুন পাসওয়ার্ড সফলভাবে সেট করা হয়েছে।',true,'adminMsg');
     }catch(err){msg(`পাসওয়ার্ড সেট করা যায়নি: ${err.message||'সার্ভার/সেটআপ পরীক্ষা করুন।'}`,false,'adminMsg')}
   }
   window.memberApprove=id=>setStatus(id,'approved');window.memberReject=id=>setStatus(id,'rejected');
   window.memberResetPassword=adminResetMemberPassword;
-  window.toggleSavedMemberPassword=toggleSavedMemberPassword;
   $('memberMenuBtn').onclick=()=>setMemberMenu(true);
   $('memberMenuClose').onclick=()=>setMemberMenu(false);
   $('memberMenuOverlay').onclick=()=>setMemberMenu(false);
