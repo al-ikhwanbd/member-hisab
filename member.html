@@ -8,7 +8,7 @@
 <link rel="icon" type="image/png" href="favicon.png">
 <link rel="apple-touch-icon" href="icon-192.png">
 <link rel="stylesheet" href="style.css?v=46">
-<link rel="stylesheet" href="member-auth.css?v=7">
+<link rel="stylesheet" href="member-auth.css?v=8">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <title>সদস্য অ্যাকাউন্ট — আল ইখওয়ান ইসলামী সংস্থা বাংলাদেশ</title>
 </head>
@@ -28,6 +28,7 @@
   <button class="menu-close" id="memberMenuClose" aria-label="মেনু বন্ধ করুন">×</button>
   <div class="drawer-logo"><img src="Al ikhwan logo.jpg" alt="আল ইখওয়ান ইসলামী সংস্থার লোগো"></div>
   <div class="drawer-title">মেইন মেনু</div>
+  <a href="#myAccount" data-member-view="myAccount"><span>🧾</span>আমার হিসাব</a>
   <a href="#dashboard" data-member-view="dashboard"><span>👤</span>সদস্যদের ব্যক্তিগত হিসাব</a>
   <a href="#members" data-member-view="members"><span>👥</span>সকল সদস্যদের হিসাব</a>
   <a href="#due" data-member-view="due"><span>📊</span>সংস্থার মোট হিসাব</a>
@@ -78,6 +79,14 @@
     <div class="member-dashboard-head"><div><div class="eyebrow">সদস্য অ্যাকাউন্ট</div><h2 id="memberName">—</h2><p id="memberMobile">—</p></div><button id="memberLogout" class="btn danger">লগআউট</button></div>
     <div id="memberProfile" class="profile-grid"></div>
 
+    <section id="myAccount" class="member-view page-section">
+      <div class="section-title">
+        <span class="title-icon">🧾</span>
+        <div><h2>আমার হিসাব</h2><p>আপনার সকল বছরের হিসাবের সংক্ষিপ্ত বিবরণ</p></div>
+      </div>
+      <div id="myAccountResult" class="report-output"><div class="loading">হিসাব লোড হচ্ছে...</div></div>
+    </section>
+
     <section id="personal" class="member-view page-section active">
       <div class="section-title">
         <span class="title-icon">👤</span>
@@ -122,9 +131,21 @@
       <div id="noticeResult" class="notice-list"><div class="loading">ডাটা লোড হচ্ছে...</div></div>
     </section>
   </section>
+
+  <section id="adminPanel" class="result-card member-card" hidden>
+    <div class="section-title"><span class="title-icon">🔐</span><div><h2>মেম্বার অনুমোদন</h2><p>শুধু অনুমোদিত অ্যাডমিনের জন্য — এখান থেকে সদস্য অনুমোদন ও হিসাবের দৃশ্যমানতা নিয়ন্ত্রণ করা যাবে</p></div></div>
+    <form id="adminLoginForm" class="member-form">
+      <label>অ্যাডমিন ইমেইল<input name="email" type="email" required autocomplete="username"></label>
+      <label>পাসওয়ার্ড<input name="password" type="password" required autocomplete="current-password"></label>
+      <button class="btn btn-primary full">অ্যাডমিন লগইন</button>
+    </form>
+    <div id="adminMsg" class="message"></div>
+    <div id="pendingMembers" class="table-wrap" hidden></div>
+    <div id="linkedMembers" class="table-wrap" hidden></div>
+  </section>
 </main>
 <footer><div class="container">© <span id="footerYear"></span> আল ইখওয়ান ইসলামী সংস্থা বাংলাদেশ<div class="footer-sub">সদস্য অ্যাকাউন্ট</div></div></footer>
 <script src="member-auth-config.js?v=3"></script>
-<script src="member-auth.js?v=7"></script>
+<script src="member-auth.js?v=8"></script>
 </body>
 </html>

@@ -48,7 +48,7 @@
     if(btn)btn.hidden=!(which==='dashboard'||which==='pending');
     if(which!=='dashboard'&&which!=='pending')setMemberMenu(false);
   }
-  function showOnly(which){$('authCard').hidden=which!=='auth';$('pendingCard').hidden=which!=='pending';$('dashboard').hidden=which!=='dashboard';syncMemberMenu(which);}
+  function showOnly(which){$('authCard').hidden=which!=='auth';$('pendingCard').hidden=which!=='pending';$('dashboard').hidden=which!=='dashboard';if($('adminPanel'))$('adminPanel').hidden=true;syncMemberMenu(which);}
   function calcPaid(member,year='all'){
     const target=year==='all'||!year?null:String(year);
     return mainData.payments.filter(p=>String(p.member_id)===String(member.id)&&(target===null||String(p.year)===target)).reduce((s,p)=>s+Number(p.paid_amount||0),0);
@@ -228,6 +228,13 @@ function findMemberById(id){return mainData.members.find(m=>String(m.id)===Strin
       memEl.value=String(currentMainMember.id);
     }
   }
+  function renderMyAccount(){
+    const result=$('myAccountResult');
+    if(!result||!currentMainMember)return;
+    const ys=years();
+    const rows=ys.map(y=>`<tr><td>${esc(y)}</td><td>${money(memberPaid(currentMainMember,y))}</td><td>${money(memberDue(currentMainMember,y))}</td></tr>`).join('');
+    result.innerHTML=`<div class="summary-grid personal-total-summary"><article><span>সকল বছরের মোট পরিশোধ</span><strong>${money(memberPaid(currentMainMember,'all'))}</strong></article><article><span>সকল বছরের মোট বাকি</span><strong>${money(memberDue(currentMainMember,'all'))}</strong></article></div><div class="table-wrap"><table><thead><tr><th>সাল</th><th>মোট পরিশোধ</th><th>মোট বাকি</th></tr></thead><tbody>${rows||'<tr><td colspan="3">কোনো হিসাব পাওয়া যায়নি</td></tr>'}</tbody><tfoot><tr class="total-row"><td>সর্বমোট</td><td>${money(memberPaid(currentMainMember,'all'))}</td><td>${money(memberDue(currentMainMember,'all'))}</td></tr></tfoot></table></div>`;
+  }
   function renderPersonal(){
     const y=$('personalYear')?.value,id=$('personalMember')?.value;
     if(!$('personalResult'))return;
@@ -301,9 +308,10 @@ function findMemberById(id){return mainData.members.find(m=>String(m.id)===Strin
     const divNote=divPublic?'':'';
     const y=$('personalYear'); if(y)y.value='all';
     const pm=$('personalMember'); if(pm)pm.value=String(currentMainMember.id);
+    renderMyAccount();
     renderPersonal();
     const hash=location.hash.replace('#','');
-    showMemberView(['personal','members','due','profitExpenseDetails','fund','notices'].includes(hash)?hash:'personal');
+    showMemberView(['myAccount','personal','members','due','profitExpenseDetails','fund','notices'].includes(hash)?hash:'personal');
   }
   async function logout(){if(sb)await sb.auth.signOut();currentProfile=null;currentMainMember=null;showOnly('auth');showChooser();}
   async function adminLogin(e){
@@ -379,7 +387,7 @@ function findMemberById(id){return mainData.members.find(m=>String(m.id)===Strin
   document.querySelectorAll('#memberMobileMenu a').forEach(a=>a.addEventListener('click',()=>setMemberMenu(false)));
   $('memberMenuLogout').onclick=e=>{e.preventDefault();logout();};
   document.querySelectorAll('#memberMobileMenu a[data-member-view]').forEach(a=>a.addEventListener('click',e=>{e.preventDefault();showMemberView(a.dataset.memberView);}));
-  window.addEventListener('hashchange',()=>{const v=location.hash.replace('#','');if(['personal','members','due','profitExpenseDetails','fund','notices'].includes(v)&&!$('dashboard').hidden)showMemberView(v);});
+  window.addEventListener('hashchange',()=>{const v=location.hash.replace('#','');if(['myAccount','personal','members','due','profitExpenseDetails','fund','notices'].includes(v)&&!$('dashboard').hidden)showMemberView(v);});
   $('personalForm').onsubmit=e=>{e.preventDefault();renderPersonal();};
   $('membersForm').onsubmit=e=>{e.preventDefault();renderAllMembers();};
   $('openMemberLogin').onclick=()=>openAuthPanel('login');
@@ -388,6 +396,14 @@ function findMemberById(id){return mainData.members.find(m=>String(m.id)===Strin
   $('signupBack').onclick=showChooser;
   $('loginToSignup').onclick=()=>openAuthPanel('signup');
   $('signupToLogin').onclick=()=>openAuthPanel('login');
-  $('signupForm').onsubmit=signUp;$('loginForm').onsubmit=signIn;$('memberLogout').onclick=logout;$('pendingLogout').onclick=logout;$('footerYear').textContent=new Date().getFullYear();showChooser();
-  if(!sb||!mainSb){msg('প্রয়োজনীয় Supabase configuration পাওয়া যায়নি।',false);}else {loadSelectableMembers();loadSession();}
+  $('signupForm').onsubmit=signUp;$('loginForm').onsubmit=signIn;$('memberLogout').onclick=logout;$('pendingLogout').onclick=logout;$('adminLoginForm').onsubmit=adminLogin;$('footerYear').textContent=new Date().getFullYear();
+  const isAdminRoute=location.hash==='#admin';
+  if(isAdminRoute){
+    $('authCard').hidden=true;$('pendingCard').hidden=true;$('dashboard').hidden=true;$('adminPanel').hidden=false;
+  }else{
+    $('adminPanel').hidden=true;
+    showChooser();
+  }
+  if(!sb||!mainSb){msg('প্রয়োজনীয় Supabase configuration পাওয়া যায়নি।',false);}else if(!isAdminRoute){loadSelectableMembers();loadSession();}else{loadSelectableMembers();}
+
 })();
