@@ -411,7 +411,7 @@ async function checkAdmin(){
   q('adminBox').hidden=false;q('adminUser').textContent=adminUser.email||'Admin';
   if(sb){const {data:ms}=await sb.auth.getSession();mainAdminReady=!!ms?.session;}
   showAuthenticatedMain();
-  await loadDividendVisibility();renderAdminData();
+  await loadDividendVisibility();renderAdminData();initWebsiteSettings();
   return true;
 }
 
@@ -444,6 +444,67 @@ async function login(){
 }
 
 async function logout(){if(memberSb)await memberSb.auth.signOut();if(sb)await sb.auth.signOut();mainAdminReady=false;location.hash='';location.reload()}
+const SITE_SETTING_KEYS=['site_name','site_tagline','hero_title','hero_subtitle','address','phone','email','facebook_url','website_url','logo_url','favicon_url','hero_image_url','primary_color','secondary_color','accent_color','background_color','card_color','text_color','footer_text','footer_subtext','member_footer_subtext','menu_title','menu_personal','menu_members','menu_due','menu_profit','menu_fund','menu_notices','meta_description'];
+let siteSettingsSaved=Object.assign({},window.AL_IKHWAN_DEFAULT_SETTINGS||{}),siteSettingsDraft=null;
+function settingsFormValues(){const f=q('websiteSettingsForm');if(!f)return Object.assign({},siteSettingsSaved);const out={};SITE_SETTING_KEYS.forEach(k=>{const el=f.elements[k];if(el)out[k]=String(el.value??'').trim();});return out}
+function fillWebsiteSettingsForm(data){const f=q('websiteSettingsForm');if(!f)return;SITE_SETTING_KEYS.forEach(k=>{const el=f.elements[k];if(el&&data[k]!=null)el.value=data[k];});}
+function showWebsiteSettingsMsg(text,ok=false){const el=q('websiteSettingsMsg');if(!el)return;el.textContent=text;el.className='message '+(ok?'success':'error');}
+async function loadWebsiteSettingsAdmin(){
+  if(!sb||!q('websiteSettingsForm'))return;
+  const {data,error}=await sb.from('site_settings').select('*').eq('id',1).maybeSingle();
+  if(error){showWebsiteSettingsMsg('ওয়েবসাইট সেটিংস লোড করা যায়নি। আগে WEBSITE-SETTINGS-SUPABASE.sql চালান।',false);fillWebsiteSettingsForm(Object.assign({},window.AL_IKHWAN_DEFAULT_SETTINGS));return;}
+  siteSettingsSaved=Object.assign({},window.AL_IKHWAN_DEFAULT_SETTINGS||{},data||{});fillWebsiteSettingsForm(siteSettingsSaved);
+}
+function collectSettingsPreview(){siteSettingsDraft=settingsFormValues();return siteSettingsDraft}
+function settingsPreviewHtml(s){
+  const esc2=v=>esc(v); const logo=s.logo_url||'Al ikhwan logo.jpg';
+  return `<div class="settings-preview-page" style="--preview-primary:${esc2(s.primary_color)};--preview-secondary:${esc2(s.secondary_color)};--preview-accent:${esc2(s.accent_color)};--preview-bg:${esc2(s.background_color)};--preview-card:${esc2(s.card_color)};--preview-text:${esc2(s.text_color)}">
+    <header class="settings-preview-header"><div class="settings-preview-brand"><img src="${esc2(logo)}" onerror="this.style.display='none'" alt=""><div><strong>${esc2(s.site_name)}</strong><span>${esc2(s.site_tagline)}</span></div></div></header>
+    <section class="settings-preview-hero" ${s.hero_image_url?`style="background-image:linear-gradient(rgba(0,0,0,.25),rgba(0,0,0,.25)),url('${esc2(s.hero_image_url)}')"`:''}><h1>${esc2(s.hero_title||s.site_name)}</h1><p>${esc2(s.hero_subtitle||s.address)}</p></section>
+    <div class="settings-preview-body"><div class="settings-preview-card"><h3>📊 সংস্থার হিসাব</h3><p>আপনার বর্তমান হিসাবের সিস্টেম এখানে আগের মতোই থাকবে।</p><div class="settings-preview-actions"><span>প্রধান রং</span><b>${esc2(s.primary_color)}</b></div><div class="settings-preview-actions"><span>যোগাযোগ</span><b>${esc2(s.phone||s.email||'—')}</b></div></div><div class="settings-preview-card"><h3>📢 ${esc2(s.menu_notices||'নোটিশ')}</h3><p>${esc2(s.address)}</p></div></div>
+    <footer class="settings-preview-footer">© ${new Date().getFullYear()} ${esc2(s.footer_text)}<small>${esc2(s.footer_subtext)}</small></footer>
+  </div>`;
+}
+async function openWebsiteSettingsPreview(){
+  const s=collectSettingsPreview();
+  const fileMap=[['settingsLogoFile','logo_url'],['settingsFaviconFile','favicon_url'],['settingsHeroFile','hero_image_url']];
+  for(const [id,key] of fileMap){const file=q(id)?.files?.[0];if(file)s[key]=URL.createObjectURL(file);}
+  const modal=document.createElement('div');modal.className='settings-preview-modal';modal.innerHTML=`<div class="settings-preview-dialog"><div class="settings-preview-toolbar"><b>👁️ Website Preview</b><button type="button" class="btn btn-light" id="closeSettingsPreview">× বন্ধ</button></div><div class="settings-preview-scroll">${settingsPreviewHtml(s)}</div></div>`;document.body.appendChild(modal);
+  modal.querySelector('#closeSettingsPreview').onclick=()=>modal.remove();modal.addEventListener('click',e=>{if(e.target===modal)modal.remove()});
+}
+async function uploadWebsiteAsset(file,type){
+  if(!file||!sb) return '';
+  const ext=(file.name.split('.').pop()||'bin').toLowerCase().replace(/[^a-z0-9]/g,'');
+  const path=`site/${type}-${Date.now()}.${ext}`;
+  const {error}=await sb.storage.from('site-assets').upload(path,file,{upsert:true,cacheControl:'3600',contentType:file.type});
+  if(error)throw error;
+  const {data}=sb.storage.from('site-assets').getPublicUrl(path); return data.publicUrl;
+}
+async function saveWebsiteSettings(e){
+  e.preventDefault();
+  if(!mainAdminReady){showWebsiteSettingsMsg('Main Supabase Admin session পাওয়া যায়নি। Admin login আবার করুন।',false);return;}
+  const btn=q('websiteSettingsSave');if(btn)btn.disabled=true;
+  try{
+    const data=settingsFormValues();
+    const uploads=[['settingsLogoFile','logo','logo_url'],['settingsFaviconFile','favicon','favicon_url'],['settingsHeroFile','hero','hero_image_url']];
+    for(const [id,type,key] of uploads){const file=q(id)?.files?.[0];if(file){showWebsiteSettingsMsg(`${type} আপলোড হচ্ছে...`,true);data[key]=await uploadWebsiteAsset(file,type);}}
+    const row=Object.assign({},data,{id:1,updated_at:new Date().toISOString(),updated_by:sb.auth.getUser?null:null});
+    const {data:authData}=await sb.auth.getUser();row.updated_by=authData?.user?.id||null;
+    const {error}=await sb.from('site_settings').upsert(row,{onConflict:'id'});
+    if(error)throw error;
+    siteSettingsSaved=Object.assign({},window.AL_IKHWAN_DEFAULT_SETTINGS||{},row);siteSettingsDraft=null;
+    fillWebsiteSettingsForm(siteSettingsSaved);window.applyAlIkhwanSiteSettings(siteSettingsSaved);
+    showWebsiteSettingsMsg('ওয়েবসাইট সেটিংস সফলভাবে সংরক্ষণ হয়েছে ✓',true);
+  }catch(err){showWebsiteSettingsMsg('সেটিংস সংরক্ষণ করা যায়নি: '+(err?.message||'Supabase setup পরীক্ষা করুন।'),false)}
+  finally{if(btn)btn.disabled=false;}
+}
+function initWebsiteSettings(){
+  const f=q('websiteSettingsForm');if(!f)return;
+  f.onsubmit=saveWebsiteSettings;q('websiteSettingsPreview').onclick=openWebsiteSettingsPreview;q('websiteSettingsReset').onclick=()=>{fillWebsiteSettingsForm(siteSettingsSaved);showWebsiteSettingsMsg('আগের সংরক্ষিত সেটিংস ফিরিয়ে আনা হয়েছে।',true)};
+  ['settingsLogoFile','settingsFaviconFile','settingsHeroFile'].forEach(id=>q(id)?.addEventListener('change',()=>showWebsiteSettingsMsg('ফাইলটি Preview/Save-এর সময় ব্যবহার হবে।',true)));
+  loadWebsiteSettingsAdmin();
+}
+
 function openForm(name){document.querySelectorAll('.admin-form').forEach(f=>f.classList.remove('active'));const f=q(name+'Form');if(f)f.classList.add('active')}
 function openManagement(name){document.querySelectorAll('.admin-data').forEach(x=>x.classList.remove('active'));q('managementArea').style.display='block';const target=q('manage'+name.charAt(0).toUpperCase()+name.slice(1));if(target)target.classList.add('active');if(name==='payments'||name==='profits'||name==='dividendVisibility')renderAdminData()}
 function setMenu(open){const menu=q('mobileMenu'),overlay=q('menuOverlay'),btn=q('menuBtn');menu.classList.toggle('open',open);overlay.classList.toggle('show',open);btn.setAttribute('aria-expanded',String(open));document.body.classList.toggle('menu-open',open)}

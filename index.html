@@ -114,6 +114,57 @@
     <div id="adminBox" hidden>
       <div class="adminbar"><div><b id="adminUser"></b><span class="admin-badge">ADMIN</span></div><button class="btn danger" id="logoutBtn">লগআউট</button></div>
 
+      <div class="website-settings-card" id="websiteSettingsCard">
+        <div class="settings-heading"><div><h2>⚙️ ওয়েবসাইট সেটিংস</h2><p>নাম, লোগো, রং, যোগাযোগ, মেনু ও অন্যান্য দৃশ্যমান তথ্য পরিবর্তন করুন। Save করার আগে Preview দেখে নিন।</p></div></div>
+        <form id="websiteSettingsForm" class="website-settings-form">
+          <div class="settings-grid">
+            <label>ওয়েবসাইট/সংস্থার নাম<input name="site_name" required></label>
+            <label>সাবটাইটেল<input name="site_tagline"></label>
+            <label>Hero শিরোনাম<input name="hero_title"></label>
+            <label>Hero ঠিকানা/উপশিরোনাম<input name="hero_subtitle"></label>
+            <label>ঠিকানা<input name="address"></label>
+            <label>ফোন<input name="phone"></label>
+            <label>ই-মেইল<input name="email" type="email"></label>
+            <label>Facebook/সোশ্যাল লিংক<input name="facebook_url" type="url" placeholder="https://..."></label>
+            <label>ওয়েবসাইট লিংক<input name="website_url" type="url" placeholder="https://..."></label>
+            <label>Logo URL<input name="logo_url" placeholder="Upload করলে এখানে URL বসবে"></label>
+            <label>Favicon URL<input name="favicon_url"></label>
+            <label>Hero Background Image URL<input name="hero_image_url" placeholder="ঐচ্ছিক"></label>
+            <label>Logo Upload<input id="settingsLogoFile" type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml"></label>
+            <label>Favicon Upload<input id="settingsFaviconFile" type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml"></label>
+            <label>Hero Image Upload<input id="settingsHeroFile" type="file" accept="image/png,image/jpeg,image/webp"></label>
+          </div>
+          <div class="settings-color-grid">
+            <label>Primary Color<input name="primary_color" type="color"></label>
+            <label>Secondary Color<input name="secondary_color" type="color"></label>
+            <label>Accent Color<input name="accent_color" type="color"></label>
+            <label>Background Color<input name="background_color" type="color"></label>
+            <label>Card Color<input name="card_color" type="color"></label>
+            <label>Text Color<input name="text_color" type="color"></label>
+          </div>
+          <div class="settings-grid">
+            <label>Footer-এর প্রধান লেখা<input name="footer_text"></label>
+            <label>Footer-এর নিচের লেখা<input name="footer_subtext"></label>
+            <label>Member Footer লেখা<input name="member_footer_subtext"></label>
+            <label>মেনুর শিরোনাম<input name="menu_title"></label>
+            <label>ব্যক্তিগত হিসাব মেনু<input name="menu_personal"></label>
+            <label>সকল সদস্য মেনু<input name="menu_members"></label>
+            <label>মোট হিসাব মেনু<input name="menu_due"></label>
+            <label>লভ্যাংশ/খরচ মেনু<input name="menu_profit"></label>
+            <label>তহবিল মেনু<input name="menu_fund"></label>
+            <label>নোটিশ মেনু<input name="menu_notices"></label>
+            <label class="settings-wide">Browser/SEO Description<input name="meta_description"></label>
+          </div>
+          <div class="settings-actions">
+            <button type="button" class="btn btn-light" id="websiteSettingsPreview">👁️ Preview / ভিউ</button>
+            <button type="button" class="btn btn-light" id="websiteSettingsReset">↩️ আগের সেটিংস</button>
+            <button type="submit" class="btn btn-primary" id="websiteSettingsSave">💾 Save Changes</button>
+          </div>
+          <div id="websiteSettingsMsg" class="message"></div>
+        </form>
+      </div>
+
+
       <h2 class="choose-title">যুক্ত করার অপশন বাছাই করুন</h2>
       <div class="admin-select-row">
         <select id="addSelect" aria-label="যুক্ত করার অপশন">
@@ -176,6 +227,7 @@
 </footer>
 <script src="supabase-config.js"></script>
 <script src="member-auth-config.js?v=4"></script>
-<script src="script.js?v=47"></script>
+<script src="site-settings.js?v=1"></script>
+<script src="script.js?v=48"></script>
 </body>
 </html>
