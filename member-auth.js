@@ -143,7 +143,25 @@ function findMemberById(id){return mainData.members.find(m=>String(m.id)===Strin
     if(!selected){msg('আগে তালিকা থেকে আপনার সদস্যের নাম নির্বাচন করুন।');return}
     if(password.length<6){msg('সঠিক পাসওয়ার্ড দিন।');return}
     msg('লগইন হচ্ছে...',true);
-    const {error}=await sb.auth.signInWithPassword({email:authEmailFromMemberId(memberId),password});
+
+    // Login must use the Auth account actually linked to the selected main member.
+    // This keeps Admin password reset (which targets member_user_id) and member
+    // login (which starts from main_member_id) on the same account.
+    const {data:link,error:linkError}=await sb
+      .from('member_account_links')
+      .select('member_user_id')
+      .eq('main_member_id',memberId)
+      .maybeSingle();
+
+    if(linkError || !link?.member_user_id){
+      msg('এই সদস্যের সঙ্গে কোনো অনুমোদিত সদস্য অ্যাকাউন্ট যুক্ত নেই।');
+      return;
+    }
+
+    const {error}=await sb.auth.signInWithPassword({
+      email:authEmailFromMemberId(link.member_user_id),
+      password
+    });
     if(error){msg('সদস্যের নাম অথবা পাসওয়ার্ড সঠিক নয়।');return}
     await loadSession();
   }
