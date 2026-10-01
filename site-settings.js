@@ -28,6 +28,10 @@
       {id:'notices',icon:'📢',label:DEFAULTS.menu_notices,enabled:true},
       {id:'admin',icon:'🔐',label:'এডমিন প্যানেল',enabled:true}
     ],
+    admin_submenu:[
+      {id:'memberApproval',icon:'📝',label:'নতুন সদস্য অনুমোদন',enabled:true},
+      {id:'memberLogin',icon:'🧑‍💻',label:'মেম্বার লগইন / অ্যাকাউন্ট',enabled:true}
+    ],
     add_options:[
       {id:'member',label:'নতুন সদস্য',enabled:true},
       {id:'payment',label:'মাসিক জমা',enabled:true},
@@ -47,8 +51,8 @@
       {id:'websiteSettings',label:'⚙️ ওয়েবসাইট সেটিংস',enabled:true}
     ]
     ,member_account:{
-      chooser:{title:'সদস্য অ্যাকাউন্ট',subtitle:'লগইন করতে বা নতুন অ্যাকাউন্ট তৈরি করতে একটি অপশন বেছে নিন।',login_button:'🔐 সদস্য লগইন',signup_button:'📝 নতুন সদস্য সাইন আপ'},
-      login:{title:'সদস্য লগইন',subtitle:'আপনার সদস্যের নাম নির্বাচন করে পাসওয়ার্ড দিয়ে লগইন করুন।',member_label:'সদস্যের নাম',member_placeholder:'-- সদস্যের নাম নির্বাচন করুন --',password_label:'পাসওয়ার্ড',password_placeholder:'পাসওয়ার্ড',submit:'🔐 সদস্য লগইন',back:'← আগের পেজে ফিরে যান',signup_link:'📝 নতুন অ্যাকাউন্ট তৈরি করুন'},
+      chooser:{title:'সদস্য অ্যাকাউন্ট',subtitle:'লগইন করতে বা নতুন অ্যাকাউন্ট তৈরি করতে একটি অপশন বেছে নিন।',login_button:'সদস্য লগইন',login_button_icon:'🔐',signup_button:'📝 নতুন সদস্য সাইন আপ'},
+      login:{title:'সদস্য লগইন',subtitle:'আপনার সদস্যের নাম নির্বাচন করে পাসওয়ার্ড দিয়ে লগইন করুন।',member_label:'সদস্যের নাম',member_placeholder:'-- সদস্যের নাম নির্বাচন করুন --',password_label:'পাসওয়ার্ড',password_placeholder:'পাসওয়ার্ড',submit:'সদস্য লগইন',submit_icon:'🔐',password_show_icon:'👁️',password_hide_icon:'🙈',back:'← আগের পেজে ফিরে যান',signup_link:'📝 নতুন অ্যাকাউন্ট তৈরি করুন'},
       signup:{title:'নতুন সদস্য অ্যাকাউন্ট',subtitle:'আপনার সদস্যের নাম নির্বাচন করে ঠিকানা, মোবাইল নম্বর ও পাসওয়ার্ড দিয়ে সাইন আপ করুন। অ্যাডমিন অনুমোদনের পর হিসাব দেখা যাবে।',member_label:'সদস্যের নাম',member_placeholder:'-- সদস্যের নাম নির্বাচন করুন --',address_label:'ঠিকানা',address_placeholder:'আপনার ঠিকানা',mobile_label:'মোবাইল নম্বর',mobile_placeholder:'01XXXXXXXXX',password_label:'পাসওয়ার্ড',password_placeholder:'কমপক্ষে ৬ অক্ষর',submit:'📝 অ্যাকাউন্ট তৈরি করুন',back:'← আগের পেজে ফিরে যান',login_link:'🔐 সদস্য লগইনে যান'},
       pending:{title:'অ্যাডমিন অনুমোদনের অপেক্ষায়',message:'আপনার অ্যাকাউন্ট তৈরি হয়েছে। অ্যাডমিন অনুমোদন করার পর আপনি আপনার ব্যক্তিগত হিসাব দেখতে পারবেন।',logout:'লগআউট'},
       dashboard:{eyebrow:'সদস্য অ্যাকাউন্ট',logout:'লগআউট',name_label:'নাম',address_label:'ঠিকানা',mobile_label:'লগইন মোবাইল',main_member_label:'মূল সদস্য'},
@@ -70,7 +74,7 @@
     s=Object.assign({},DEFAULTS,s||{});
     const ui=Object.assign({},DEFAULT_UI_SETTINGS,s.ui_settings||{});
     ui.colors=Object.assign({},DEFAULT_UI_SETTINGS.colors,(s.ui_settings&&s.ui_settings.colors)||{});
-    ['menu','add_options','manage_options'].forEach(key=>{
+    ['menu','admin_submenu','add_options','manage_options'].forEach(key=>{
       const defaults=DEFAULT_UI_SETTINGS[key]||[];
       const raw=Array.isArray(ui[key])?ui[key]:[];
       const map=new Map(raw.map(x=>[String(x.id),x]));
@@ -111,6 +115,19 @@
         if(text)text.textContent=x.label||'';
         else a.appendChild(document.createTextNode(x.label||''));
       }
+    });
+    const adminItem=menuMap.get('admin');
+    const adminSubmenu=document.getElementById('adminMenuSubmenu');
+    if(adminSubmenu)adminSubmenu.style.display=adminItem&&adminItem.enabled?'block':'none';
+    const adminSubMap=new Map((ui.admin_submenu||[]).map(x=>[String(x.id),x]));
+    document.querySelectorAll('#adminMenuSubmenu a[data-admin-submenu]').forEach(a=>{
+      const x=adminSubMap.get(String(a.dataset.adminSubmenu));
+      if(!x)return;
+      a.style.display=x.enabled?'flex':'none';
+      const span=a.querySelector('span');
+      if(span)span.textContent=x.icon||'';
+      const text=[...a.childNodes].find(n=>n.nodeType===3);
+      if(text)text.textContent=x.label||'';
     });
     const labels={personal:s.menu_personal,members:s.menu_members,due:s.menu_due,profitExpenseDetails:s.menu_profit,fund:s.menu_fund,notices:s.menu_notices};
     Object.keys(labels).forEach(k=>{

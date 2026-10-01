@@ -460,6 +460,10 @@ const WEB_UI_DEFAULTS={
     {id:'notices',icon:'📢',label:'নোটিশ',enabled:true},
     {id:'admin',icon:'🔐',label:'এডমিন প্যানেল',enabled:true}
   ],
+  admin_submenu:[
+    {id:'memberApproval',icon:'📝',label:'নতুন সদস্য অনুমোদন',enabled:true},
+    {id:'memberLogin',icon:'🧑‍💻',label:'মেম্বার লগইন / অ্যাকাউন্ট',enabled:true}
+  ],
   add_options:[
     {id:'member',label:'নতুন সদস্য',enabled:true},
     {id:'payment',label:'মাসিক জমা',enabled:true},
@@ -480,8 +484,8 @@ const WEB_UI_DEFAULTS={
   ]
 };
 const WEB_MEMBER_ACCOUNT_DEFAULTS={
-  chooser:{title:'সদস্য অ্যাকাউন্ট',subtitle:'লগইন করতে বা নতুন অ্যাকাউন্ট তৈরি করতে একটি অপশন বেছে নিন।',login_button:'🔐 সদস্য লগইন',signup_button:'📝 নতুন সদস্য সাইন আপ'},
-  login:{title:'সদস্য লগইন',subtitle:'আপনার সদস্যের নাম নির্বাচন করে পাসওয়ার্ড দিয়ে লগইন করুন।',member_label:'সদস্যের নাম',member_placeholder:'-- সদস্যের নাম নির্বাচন করুন --',password_label:'পাসওয়ার্ড',password_placeholder:'পাসওয়ার্ড',submit:'🔐 সদস্য লগইন',back:'← আগের পেজে ফিরে যান',signup_link:'📝 নতুন অ্যাকাউন্ট তৈরি করুন'},
+  chooser:{title:'সদস্য অ্যাকাউন্ট',subtitle:'লগইন করতে বা নতুন অ্যাকাউন্ট তৈরি করতে একটি অপশন বেছে নিন।',login_button:'সদস্য লগইন',login_button_icon:'🔐',signup_button:'📝 নতুন সদস্য সাইন আপ'},
+  login:{title:'সদস্য লগইন',subtitle:'আপনার সদস্যের নাম নির্বাচন করে পাসওয়ার্ড দিয়ে লগইন করুন।',member_label:'সদস্যের নাম',member_placeholder:'-- সদস্যের নাম নির্বাচন করুন --',password_label:'পাসওয়ার্ড',password_placeholder:'পাসওয়ার্ড',submit:'সদস্য লগইন',submit_icon:'🔐',password_show_icon:'👁️',password_hide_icon:'🙈',back:'← আগের পেজে ফিরে যান',signup_link:'📝 নতুন অ্যাকাউন্ট তৈরি করুন'},
   signup:{title:'নতুন সদস্য অ্যাকাউন্ট',subtitle:'আপনার সদস্যের নাম নির্বাচন করে ঠিকানা, মোবাইল নম্বর ও পাসওয়ার্ড দিয়ে সাইন আপ করুন। অ্যাডমিন অনুমোদনের পর হিসাব দেখা যাবে।',member_label:'সদস্যের নাম',member_placeholder:'-- সদস্যের নাম নির্বাচন করুন --',address_label:'ঠিকানা',address_placeholder:'আপনার ঠিকানা',mobile_label:'মোবাইল নম্বর',mobile_placeholder:'01XXXXXXXXX',password_label:'পাসওয়ার্ড',password_placeholder:'কমপক্ষে ৬ অক্ষর',submit:'📝 অ্যাকাউন্ট তৈরি করুন',back:'← আগের পেজে ফিরে যান',login_link:'🔐 সদস্য লগইনে যান'},
   pending:{title:'অ্যাডমিন অনুমোদনের অপেক্ষায়',message:'আপনার অ্যাকাউন্ট তৈরি হয়েছে। অ্যাডমিন অনুমোদন করার পর আপনি আপনার ব্যক্তিগত হিসাব দেখতে পারবেন।',logout:'লগআউট'},
   dashboard:{eyebrow:'সদস্য অ্যাকাউন্ট',logout:'লগআউট',name_label:'নাম',address_label:'ঠিকানা',mobile_label:'লগইন মোবাইল',main_member_label:'মূল সদস্য'},
@@ -516,7 +520,7 @@ function webUiClone(v){
         if(v.member_account[k]&&typeof v.member_account[k]==='object')Object.assign(base.member_account[k],v.member_account[k]);
       });
     }
-    ['menu','add_options','manage_options'].forEach(k=>{
+    ['menu','admin_submenu','add_options','manage_options'].forEach(k=>{
       const raw=Array.isArray(v[k])?v[k]:[];
       const map=new Map(raw.map(x=>[String(x.id),x]));
       base[k]=base[k].map(x=>Object.assign({},x,map.get(String(x.id))||{}));
@@ -549,6 +553,19 @@ function applyWebUiSettings(ui){
   const menuMap=new Map(siteUiSettings.menu.map(x=>[String(x.id),x]));
   document.querySelectorAll('#mobileMenu a[data-view]').forEach(a=>{
     const x=menuMap.get(String(a.dataset.view));
+    if(!x)return;
+    a.style.display=x.enabled?'flex':'none';
+    const icon=a.querySelector('span');
+    if(icon)icon.textContent=x.icon||'';
+    const textNode=[...a.childNodes].find(n=>n.nodeType===3);
+    if(textNode)textNode.textContent=x.label||'';
+  });
+  const adminItem=menuMap.get('admin');
+  const adminSubmenu=q('adminMenuSubmenu');
+  if(adminSubmenu)adminSubmenu.style.display=adminItem&&adminItem.enabled?'block':'none';
+  const adminSubMap=new Map((siteUiSettings.admin_submenu||[]).map(x=>[String(x.id),x]));
+  document.querySelectorAll('#adminMenuSubmenu a[data-admin-submenu]').forEach(a=>{
+    const x=adminSubMap.get(String(a.dataset.adminSubmenu));
     if(!x)return;
     a.style.display=x.enabled?'flex':'none';
     const icon=a.querySelector('span');
@@ -596,6 +613,8 @@ function ensureWebUiSettingsEditor(){
     <div class="web-ui-settings-card">
       <div class="web-ui-heading"><div><h3>☰ Menu Settings</h3><p>মেনুর নাম, Icon এবং Show/Hide নিয়ন্ত্রণ করুন।</p></div></div>
       <div id="webMenuSettingsList" class="web-setting-list"></div>
+      <h4 class="web-setting-subtitle">এডমিন প্যানেলের নিচের অপশন</h4>
+      <div id="webAdminSubmenuSettingsList" class="web-setting-list"></div>
     </div>
     <div class="web-ui-settings-card">
       <div class="web-ui-heading"><div><h3>🔧 Admin Selection Box Settings</h3><p>Admin Panel-এর “যুক্ত করার অপশন” এবং “সম্পাদনার অপশন” থেকে কোনটি দেখা যাবে ও কী নামে দেখা যাবে তা নিয়ন্ত্রণ করুন।</p></div></div>
@@ -634,14 +653,16 @@ function renderWebUiSettingsEditor(){
     </div>`).join('');
   };
   const ml=q('webMenuSettingsList');if(ml)ml.innerHTML=renderMenu(ui.menu,true);
+  const asl=q('webAdminSubmenuSettingsList');if(asl)asl.innerHTML=renderMenu(ui.admin_submenu,true);
   const al=q('webAddOptionsSettingsList');if(al)al.innerHTML=renderMenu(ui.add_options,false);
   const gl=q('webManageOptionsSettingsList');if(gl)gl.innerHTML=renderMenu(ui.manage_options,false);
   const host=q('webMemberAccountSettingsList');
   if(host){
     const sections=[['chooser','অ্যাকাউন্ট বাছাই পেজ'],['login','সদস্য লগইন'],['signup','নতুন সদস্য অ্যাকাউন্ট'],['pending','অনুমোদনের অপেক্ষা'],['dashboard','সদস্য অ্যাকাউন্ট'],['admin','নতুন সদস্য অনুমোদন / অ্যাডমিন']];
+    const memberFieldLabels={login_button:'মেম্বার লগইন বাটনের লেখা',login_button_icon:'মেম্বার লগইন বাটনের আইকন/ছবি',submit:'লগইন সাবমিট বাটনের লেখা',submit_icon:'লগইন সাবমিট বাটনের আইকন/ছবি',password_show_icon:'পাসওয়ার্ড দেখানোর আইকন/ছবি',password_hide_icon:'পাসওয়ার্ড লুকানোর আইকন/ছবি'};
     host.innerHTML=sections.map(([section,title])=>{
       const obj=ui.member_account?.[section]||{};
-      return `<div class="web-member-setting-section"><h4>${esc(title)}</h4><div class="web-member-setting-grid">${Object.entries(obj).map(([key,val])=>`<label><span>${esc(key)}</span><input type="text" data-member-setting-section="${esc(section)}" data-member-setting-key="${esc(key)}" value="${esc(val)}"></label>`).join('')}</div></div>`;
+      return `<div class="web-member-setting-section"><h4>${esc(title)}</h4><div class="web-member-setting-grid">${Object.entries(obj).map(([key,val])=>`<label><span>${esc(memberFieldLabels[key]||key)}</span><input type="text" data-member-setting-section="${esc(section)}" data-member-setting-key="${esc(key)}" value="${esc(val)}"></label>`).join('')}</div></div>`;
     }).join('');
   }
 }
@@ -688,7 +709,7 @@ function readWebUiSettingsEditor(){
     if(!out.member_account)out.member_account=JSON.parse(JSON.stringify(WEB_MEMBER_ACCOUNT_DEFAULTS));
     if(out.member_account[section])out.member_account[section][key]=String(i.value??'').trim();
   });
-  [['menu','webMenuSettingsList'],['add_options','webAddOptionsSettingsList'],['manage_options','webManageOptionsSettingsList']].forEach(([key,id])=>{
+  [['menu','webMenuSettingsList'],['admin_submenu','webAdminSubmenuSettingsList'],['add_options','webAddOptionsSettingsList'],['manage_options','webManageOptionsSettingsList']].forEach(([key,id])=>{
     document.querySelectorAll('#'+id+' .web-setting-row').forEach(r=>{
       const x=out[key].find(a=>String(a.id)===String(r.dataset.webId));if(!x)return;
       x.label=r.querySelector('[data-web-label]')?.value.trim()||x.label;
