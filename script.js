@@ -344,27 +344,7 @@ async function saveProfit(){if(!mainAdminReady){showMessage('মূল হিস
 async function saveExpense(){await saveOrUpdate('expenses',q('expenseForm'),d=>({year:+d.year,description:d.description.trim(),amount:+d.amount}))}
 async function saveAsset(){await saveOrUpdate('assets',q('assetForm'),d=>({year:+d.year,date:d.date,category:d.category.trim(),description:d.description.trim(),amount:+d.amount,status:'active'}))}
 async function saveNotice(){await saveOrUpdate('notices',q('noticeForm'),d=>({title:d.title.trim(),description:d.description.trim(),status:'published'}))}
-async function del(table,id){
-  if(!mainAdminReady){showMessage('মূল হিসাব সংরক্ষণের জন্য Main Supabase Admin account এখনো সেটআপ হয়নি।');return}
-  if(!confirm('এই তথ্যটি মুছে ফেলতে চান?'))return;
-  const {error}=await sb.from(table).delete().eq('id',id);
-  if(error){showMessage(error.message,false);return}
-  if(table==='members' && memberSb){
-    try{
-      const {data:{session}}=await memberSb.auth.getSession();
-      if(!session?.access_token)throw new Error('Member Admin session পাওয়া যায়নি। আবার Admin লগইন করুন।');
-      const fnUrl=`${window.MEMBER_SUPABASE_URL}/functions/v1/admin-delete-member-account`;
-      const res=await fetch(fnUrl,{method:'POST',headers:{'Content-Type':'application/json','Authorization':`Bearer ${session.access_token}`},body:JSON.stringify({main_member_id:id})});
-      const body=await res.json().catch(()=>({}));
-      if(!res.ok)throw new Error(body.error||body.message||'Member account cleanup failed.');
-    }catch(err){
-      showMessage(`সদস্যের মূল হিসাব মুছে গেছে, কিন্তু Member account cleanup সম্পূর্ণ হয়নি: ${err.message||'আবার চেষ্টা করুন।'}`,false);
-      await load();
-      return;
-    }
-  }
-  showMessage('তথ্য ও সংশ্লিষ্ট সদস্য অ্যাকাউন্ট মুছে ফেলা হয়েছে ✓',true);await load()
-}
+async function del(table,id){if(!mainAdminReady){showMessage('মূল হিসাব সংরক্ষণের জন্য Main Supabase Admin account এখনো সেটআপ হয়নি।');return}if(!confirm('এই তথ্যটি মুছে ফেলতে চান?'))return;const {error}=await sb.from(table).delete().eq('id',id);if(error){showMessage(error.message,false);return}showMessage('তথ্য মুছে ফেলা হয়েছে ✓',true);await load()}
 function editMember(id){const m=members.find(x=>String(x.id)===String(id));if(!m)return;const f=q('memberForm');f.id.value=m.id;f.name.value=m.name;f.address.value=m.address||'';f.mobile.value=m.mobile||'';openForm('member');f.scrollIntoView({behavior:'smooth',block:'start'})}
 function editPayment(id){const p=payments.find(x=>String(x.id)===String(id));if(!p)return;const f=q('paymentForm');f.id.value=p.id;f.member_id.value=p.member_id;f.year.value=p.year;f.month.value=p.month;if(f.month_count)f.month_count.value=1;f.paid_amount.value=p.paid_amount;openForm('payment');f.scrollIntoView({behavior:'smooth',block:'start'})}
 function editProfit(id){const x=profits.find(x=>String(x.id)===String(id));if(!x)return;const f=q('profitForm');f.id.value=x.id;f.year.value=x.year;f.description.value=x.description||'';f.total_profit.value=x.total_profit;openForm('profit');f.scrollIntoView({behavior:'smooth',block:'start'})}
@@ -464,25 +444,262 @@ async function login(){
 }
 
 async function logout(){if(memberSb)await memberSb.auth.signOut();if(sb)await sb.auth.signOut();mainAdminReady=false;location.hash='';location.reload()}
+
+/* Additive Website UI Settings: palette, menu controls and admin option controls. */
+const WEB_UI_DEFAULTS={
+  colors:{
+    primary:'#087f4e',secondary:'#0f6b4a',accent:'#f0b429',background:'#f4f8f6',
+    card:'#ffffff',text:'#17322a',header:'#087f4e',footer:'#076f45',button:'#087f4e'
+  },
+  menu:[
+    {id:'personal',icon:'👤',label:'সদস্যদের ব্যক্তিগত হিসাব',enabled:true},
+    {id:'members',icon:'👥',label:'সকল সদস্যদের হিসাব',enabled:true},
+    {id:'due',icon:'📊',label:'সংস্থার মোট হিসাব',enabled:true},
+    {id:'profitExpenseDetails',icon:'📋',label:'লভ্যাংশ ও খরচের বিবরণ',enabled:true},
+    {id:'fund',icon:'💰',label:'অবশিষ্ট তহবিলের খাত',enabled:true},
+    {id:'notices',icon:'📢',label:'নোটিশ',enabled:true},
+    {id:'admin',icon:'🔐',label:'এডমিন প্যানেল',enabled:true}
+  ],
+  add_options:[
+    {id:'member',label:'নতুন সদস্য',enabled:true},
+    {id:'payment',label:'মাসিক জমা',enabled:true},
+    {id:'profit',label:'লভ্যাংশ',enabled:true},
+    {id:'expense',label:'বিবিধ খরচ',enabled:true},
+    {id:'asset',label:'অবশিষ্ট তহবিলের খাত',enabled:true},
+    {id:'notice',label:'নোটিশ',enabled:true}
+  ],
+  manage_options:[
+    {id:'members',label:'সদস্য ব্যবস্থাপনা',enabled:true},
+    {id:'payments',label:'জমা ব্যবস্থাপনা',enabled:true},
+    {id:'profits',label:'লভ্যাংশ ব্যবস্থাপনা',enabled:true},
+    {id:'dividendVisibility',label:'সদস্যদের লভ্যাংশ Public/Hide',enabled:true},
+    {id:'expenses',label:'খরচ ব্যবস্থাপনা',enabled:true},
+    {id:'assets',label:'অবশিষ্ট তহবিলের খাত ব্যবস্থাপনা',enabled:true},
+    {id:'notices',label:'নোটিশ ব্যবস্থাপনা',enabled:true},
+    {id:'websiteSettings',label:'⚙️ ওয়েবসাইট সেটিংস',enabled:true}
+  ]
+};
+const WEB_COLOR_PALETTE=[
+  ['Al-Ikhwan Green','#087f4e'],['Deep Green','#0f6b4a'],['Emerald','#10b981'],['Forest','#228b22'],
+  ['Mint','#3eb489'],['Sage','#9caf88'],['Olive','#808000'],['Lime','#84cc16'],
+  ['Blue','#0000ff'],['Royal Blue','#4169e1'],['Cobalt','#0047ab'],['Sky Blue','#38bdf8'],
+  ['Navy','#1455a8'],['Teal','#008080'],['Turquoise','#40e0d0'],['Cyan','#00d9e8'],
+  ['Purple','#800080'],['Royal Purple','#7851a9'],['Violet','#8a2be2'],['Lavender','#e6e6fa'],
+  ['Indigo','#4b0082'],['Plum','#8e4585'],['Magenta','#ff00ff'],['Raspberry','#e30b5c'],
+  ['Red','#ff1b1b'],['Crimson','#dc143c'],['Scarlet','#ff2400'],['Maroon','#a00000'],
+  ['Burgundy','#800020'],['Rose','#e11d48'],['Pink','#f45cae'],['Coral','#ff7f50'],
+  ['Orange','#ffa500'],['Tangerine','#f97316'],['Peach','#ffdab9'],['Amber','#f59e0b'],
+  ['Gold','#ffd700'],['Mustard','#ffcc33'],['Yellow','#fff000'],['Lemon','#fff44f'],
+  ['Brown','#8b4513'],['Chocolate','#7b3f00'],['Bronze','#cd7f32'],['Copper','#b87333'],
+  ['Rust','#b7410e'],['Tan','#d2b48c'],['Beige','#f5f5dc'],['Black','#000000'],
+  ['Charcoal','#36454f'],['Dark Gray','#4b5563'],['Gray','#bdbdbd'],['Silver','#c0c0c0'],
+  ['Light Gray','#e5e7eb'],['White','#ffffff'],['Deep Sea','#0f4c5c'],['Ocean','#0077b6'],
+  ['Denim','#1560bd'],['Periwinkle','#ccccff'],['Lilac','#c8a2c8'],['Terracotta','#e2725b'],
+  ['Apricot','#fbceb1'],['Khaki','#c3b091'],['Midnight','#191970'],['Slate','#708090'],
+  ['Graphite','#41424c'],['Ivory','#fffff0']
+];
+function webUiClone(v){
+  const base=JSON.parse(JSON.stringify(WEB_UI_DEFAULTS));
+  if(v&&typeof v==='object'){
+    if(v.colors)Object.assign(base.colors,v.colors);
+    ['menu','add_options','manage_options'].forEach(k=>{
+      const raw=Array.isArray(v[k])?v[k]:[];
+      const map=new Map(raw.map(x=>[String(x.id),x]));
+      base[k]=base[k].map(x=>Object.assign({},x,map.get(String(x.id))||{}));
+    });
+  }
+  return base;
+}
+function validWebHex(v){return /^#[0-9A-Fa-f]{6}$/.test(String(v||'').trim())}
+let siteUiSettings=webUiClone();
+
+function applyWebUiSettings(ui){
+  siteUiSettings=webUiClone(ui);
+  const c=siteUiSettings.colors;
+  const root=document.documentElement;
+  root.style.setProperty('--primary-color',c.primary);
+  root.style.setProperty('--secondary-color',c.secondary);
+  root.style.setProperty('--accent-color',c.accent);
+  root.style.setProperty('--site-bg',c.background);
+  root.style.setProperty('--card-bg',c.card);
+  root.style.setProperty('--text-color',c.text);
+  root.style.setProperty('--green',c.primary);
+  root.style.setProperty('--green-dark',c.secondary);
+  root.style.setProperty('--green-soft',c.background);
+  root.style.setProperty('--text',c.text);
+  root.style.setProperty('--white',c.card);
+  root.style.setProperty('--header-color',c.header);
+  root.style.setProperty('--footer-color',c.footer);
+  root.style.setProperty('--button-color',c.button);
+  const menuMap=new Map(siteUiSettings.menu.map(x=>[String(x.id),x]));
+  document.querySelectorAll('#mobileMenu a[data-view]').forEach(a=>{
+    const x=menuMap.get(String(a.dataset.view));
+    if(!x)return;
+    a.style.display=x.enabled?'flex':'none';
+    const icon=a.querySelector('span');
+    if(icon)icon.textContent=x.icon||'';
+    const textNode=[...a.childNodes].find(n=>n.nodeType===3);
+    if(textNode)textNode.textContent=x.label||'';
+  });
+  applyAdminOptionSettingsFromState();
+  route();
+}
+function applyAdminOptionSettingsFromState(){
+  [['add_options','addSelect'],['manage_options','manageSelect']].forEach(([key,id])=>{
+    const map=new Map((siteUiSettings[key]||[]).map(x=>[String(x.id),x]));
+    const select=q(id);
+    if(!select)return;
+    [...select.options].forEach(o=>{
+      const keyId=o.dataset.settingKey||o.value;
+      if(keyId==='')return;
+      const x=map.get(String(keyId));
+      if(!x)return;
+      const force=(id==='manageSelect'&&x.id==='websiteSettings');
+      o.textContent=x.label||o.textContent;
+      o.hidden=force?false:!x.enabled;
+      o.disabled=force?false:!x.enabled;
+    });
+  });
+}
+function ensureWebSettingOptionKeys(){
+  ['addSelect','manageSelect'].forEach(id=>{
+    const select=q(id);if(!select)return;
+    [...select.options].forEach(o=>{if(o.value)o.dataset.settingKey=o.value});
+  });
+}
+function ensureWebUiSettingsEditor(){
+  const form=q('websiteSettingsForm');
+  if(!form||q('webUiSettingsEditor'))return;
+  ensureWebSettingOptionKeys();
+  const host=document.createElement('div');
+  host.id='webUiSettingsEditor';
+  host.innerHTML=`
+    <div class="web-ui-settings-card">
+      <div class="web-ui-heading"><div><h3>🎨 Website Color Settings</h3><p>Palette থেকে রং বাছাই করুন অথবা নিজের HEX Color দিন।</p></div></div>
+      <div id="webColorSettingsGrid" class="web-color-settings-grid"></div>
+    </div>
+    <div class="web-ui-settings-card">
+      <div class="web-ui-heading"><div><h3>☰ Menu Settings</h3><p>মেনুর নাম, Icon এবং Show/Hide নিয়ন্ত্রণ করুন।</p></div></div>
+      <div id="webMenuSettingsList" class="web-setting-list"></div>
+    </div>
+    <div class="web-ui-settings-card">
+      <div class="web-ui-heading"><div><h3>🔧 Admin Selection Box Settings</h3><p>Admin Panel-এর “যুক্ত করার অপশন” এবং “সম্পাদনার অপশন” থেকে কোনটি দেখা যাবে ও কী নামে দেখা যাবে তা নিয়ন্ত্রণ করুন।</p></div></div>
+      <h4 class="web-setting-subtitle">যুক্ত করার অপশন</h4>
+      <div id="webAddOptionsSettingsList" class="web-setting-list"></div>
+      <h4 class="web-setting-subtitle">সম্পাদনার অপশন</h4>
+      <div id="webManageOptionsSettingsList" class="web-setting-list"></div>
+    </div>`;
+  const actions=form.querySelector('.settings-actions');
+  form.insertBefore(host,actions||null);
+  renderWebUiSettingsEditor();
+}
+function renderWebUiSettingsEditor(){
+  const ui=siteUiSettings;
+  const colorLabels={primary:'প্রধান রং',secondary:'দ্বিতীয় রং',accent:'Accent রং',background:'পেজের ব্যাকগ্রাউন্ড',card:'Card রং',text:'Text রং',header:'Header রং',footer:'Footer রং',button:'Button রং'};
+  const cg=q('webColorSettingsGrid');
+  if(cg)cg.innerHTML=Object.entries(colorLabels).map(([key,label])=>{
+    const value=String(ui.colors[key]||'#ffffff').toLowerCase();
+    const name=(WEB_COLOR_PALETTE.find(x=>x[1]===value)||['Custom'])[0];
+    return `<div class="web-color-setting-row">
+      <div><b>${esc(label)}</b><small class="web-color-value-name">${esc(name)}</small></div>
+      <button type="button" class="web-color-open" data-web-color="${key}"><span class="web-color-swatch" style="background:${esc(value)}"></span><span><strong>${esc(name)}</strong><small>${esc(value)}</small></span><span>🎨 পরিবর্তন</span></button>
+      <input type="hidden" data-web-color-value="${key}" value="${esc(value)}">
+    </div>`;
+  }).join('');
+  const renderMenu=(arr,withIcon)=>{
+    return arr.map(x=>`<div class="web-setting-row" data-web-id="${esc(x.id)}">
+      <span class="web-setting-key">${esc(x.id)}</span>
+      <input type="text" data-web-label value="${esc(x.label||'')}">
+      ${withIcon?`<input type="text" data-web-icon maxlength="4" value="${esc(x.icon||'')}">`:''}
+      <label class="web-switch"><input type="checkbox" data-web-enabled ${x.enabled?'checked':''}><span></span></label>
+    </div>`).join('');
+  };
+  const ml=q('webMenuSettingsList');if(ml)ml.innerHTML=renderMenu(ui.menu,true);
+  const al=q('webAddOptionsSettingsList');if(al)al.innerHTML=renderMenu(ui.add_options,false);
+  const gl=q('webManageOptionsSettingsList');if(gl)gl.innerHTML=renderMenu(ui.manage_options,false);
+}
+function openWebColorPalette(key){
+  const current=String(siteUiSettings.colors[key]||'#ffffff').toLowerCase();
+  const modal=document.createElement('div');
+  modal.className='web-color-modal-backdrop';
+  modal.innerHTML=`<div class="web-color-modal" role="dialog" aria-modal="true">
+    <div class="web-color-modal-head"><div><h3>🎨 রং নির্বাচন</h3><p>${esc(key)} রঙের জন্য পছন্দের Color বাছাই করুন</p></div><button type="button" class="web-color-close">×</button></div>
+    <div class="web-color-palette">${WEB_COLOR_PALETTE.map(([n,v])=>`<button type="button" class="web-palette-swatch ${current===v?'selected':''}" data-web-palette="${v}" title="${esc(n)}"><span style="background:${v}"></span><small>${esc(n)}</small></button>`).join('')}</div>
+    <div class="web-custom-color-row"><label>Custom Color <input id="webCustomColor" type="color" value="${validWebHex(current)?current:'#ffffff'}"></label><input id="webCustomHex" type="text" value="${esc(current)}" maxlength="7" placeholder="#000000"></div>
+    <div class="web-color-actions"><button type="button" class="btn btn-light" id="webColorCancel">বাতিল</button><button type="button" class="btn btn-primary" id="webColorApply">রং নির্বাচন</button></div>
+  </div>`;
+  document.body.appendChild(modal);
+  const hex=modal.querySelector('#webCustomHex'), picker=modal.querySelector('#webCustomColor');
+  let chosen=current;
+  const update=v=>{
+    if(!validWebHex(v))return;
+    chosen=String(v).toLowerCase();hex.value=chosen;picker.value=chosen;
+    modal.querySelectorAll('[data-web-palette]').forEach(b=>b.classList.toggle('selected',b.dataset.webPalette===chosen));
+  };
+  modal.querySelectorAll('[data-web-palette]').forEach(b=>b.addEventListener('click',()=>update(b.dataset.webPalette)));
+  picker.addEventListener('input',()=>update(picker.value));
+  hex.addEventListener('input',()=>{if(validWebHex(hex.value))update(hex.value)});
+  const close=()=>modal.remove();
+  modal.querySelector('#webColorCancel').onclick=close;
+  modal.querySelector('.web-color-close').onclick=close;
+  modal.addEventListener('click',e=>{if(e.target===modal)close()});
+  modal.querySelector('#webColorApply').onclick=()=>{
+    siteUiSettings.colors[key]=chosen;
+    const hidden=q('webUiSettingsEditor')?.querySelector(`[data-web-color-value="${key}"]`);
+    if(hidden)hidden.value=chosen;
+    renderWebUiSettingsEditor();
+    close();
+  };
+}
+function readWebUiSettingsEditor(){
+  const out=webUiClone(siteUiSettings);
+  document.querySelectorAll('#webColorSettingsGrid [data-web-color-value]').forEach(i=>{
+    if(validWebHex(i.value))out.colors[i.dataset.webColorValue]=i.value.toLowerCase();
+  });
+  [['menu','webMenuSettingsList'],['add_options','webAddOptionsSettingsList'],['manage_options','webManageOptionsSettingsList']].forEach(([key,id])=>{
+    document.querySelectorAll('#'+id+' .web-setting-row').forEach(r=>{
+      const x=out[key].find(a=>String(a.id)===String(r.dataset.webId));if(!x)return;
+      x.label=r.querySelector('[data-web-label]')?.value.trim()||x.label;
+      if(r.querySelector('[data-web-icon]'))x.icon=r.querySelector('[data-web-icon]').value.trim()||x.icon;
+      x.enabled=r.querySelector('[data-web-enabled]')?.checked!==false;
+      if(key==='manage_options'&&x.id==='websiteSettings')x.enabled=true;
+    });
+  });
+  return out;
+}
+
 const SITE_SETTING_KEYS=['site_name','site_tagline','hero_title','hero_subtitle','address','phone','email','facebook_url','website_url','logo_url','favicon_url','hero_image_url','primary_color','secondary_color','accent_color','background_color','card_color','text_color','footer_text','footer_subtext','member_footer_subtext','menu_title','menu_personal','menu_members','menu_due','menu_profit','menu_fund','menu_notices','meta_description'];
 let siteSettingsSaved=Object.assign({},window.AL_IKHWAN_DEFAULT_SETTINGS||{}),siteSettingsDraft=null;
-function settingsFormValues(){const f=q('websiteSettingsForm');if(!f)return Object.assign({},siteSettingsSaved);const out={};SITE_SETTING_KEYS.forEach(k=>{const el=f.elements[k];if(el)out[k]=String(el.value??'').trim();});return out}
-function fillWebsiteSettingsForm(data){const f=q('websiteSettingsForm');if(!f)return;SITE_SETTING_KEYS.forEach(k=>{const el=f.elements[k];if(el&&data[k]!=null)el.value=data[k];});}
+function settingsFormValues(){
+  const f=q('websiteSettingsForm');if(!f)return Object.assign({},siteSettingsSaved);
+  const out={};
+  SITE_SETTING_KEYS.forEach(k=>{const el=f.elements[k];if(el)out[k]=String(el.value??'').trim()});
+  out.ui_settings=readWebUiSettingsEditor();
+  return out;
+}
+function fillWebsiteSettingsForm(data){
+  const f=q('websiteSettingsForm');if(!f)return;
+  SITE_SETTING_KEYS.forEach(k=>{const el=f.elements[k];if(el&&data[k]!=null)el.value=data[k]});
+  siteUiSettings=webUiClone(data?.ui_settings||window.AL_IKHWAN_DEFAULT_UI_SETTINGS||WEB_UI_DEFAULTS);
+  if(q('webUiSettingsEditor'))renderWebUiSettingsEditor();
+  applyWebUiSettings(siteUiSettings);
+}
 function showWebsiteSettingsMsg(text,ok=false){const el=q('websiteSettingsMsg');if(!el)return;el.textContent=text;el.className='message '+(ok?'success':'error');}
 async function loadWebsiteSettingsAdmin(){
   if(!sb||!q('websiteSettingsForm'))return;
   const {data,error}=await sb.from('site_settings').select('*').eq('id',1).maybeSingle();
-  if(error){showWebsiteSettingsMsg('ওয়েবসাইট সেটিংস লোড করা যায়নি। আগে WEBSITE-SETTINGS-SUPABASE.sql চালান।',false);fillWebsiteSettingsForm(Object.assign({},window.AL_IKHWAN_DEFAULT_SETTINGS));return;}
-  siteSettingsSaved=Object.assign({},window.AL_IKHWAN_DEFAULT_SETTINGS||{},data||{});fillWebsiteSettingsForm(siteSettingsSaved);
+  if(error){showWebsiteSettingsMsg('ওয়েবসাইট সেটিংস লোড করা যায়নি। আগে WEBSITE-SETTINGS-UI-MIGRATION.sql চালান।',false);fillWebsiteSettingsForm(Object.assign({},window.AL_IKHWAN_DEFAULT_SETTINGS));return;}
+  siteSettingsSaved=Object.assign({},window.AL_IKHWAN_DEFAULT_SETTINGS||{},data||{});
+  fillWebsiteSettingsForm(siteSettingsSaved);
 }
 function collectSettingsPreview(){siteSettingsDraft=settingsFormValues();return siteSettingsDraft}
 function settingsPreviewHtml(s){
   const esc2=v=>esc(v); const logo=s.logo_url||'Al ikhwan logo.jpg';
-  return `<div class="settings-preview-page" style="--preview-primary:${esc2(s.primary_color)};--preview-secondary:${esc2(s.secondary_color)};--preview-accent:${esc2(s.accent_color)};--preview-bg:${esc2(s.background_color)};--preview-card:${esc2(s.card_color)};--preview-text:${esc2(s.text_color)}">
+  return `<div class="settings-preview-page" style="--preview-primary:${esc2(s.primary_color)};--preview-secondary:${esc2(s.secondary_color)};--preview-accent:${esc2(s.accent_color)};--preview-bg:${esc2(s.background_color)};--preview-card:${esc2(s.card_color)};--preview-text:${esc2(s.text_color)};--preview-header:${esc2(s.ui_settings?.colors?.header||s.primary_color)};--preview-footer:${esc2(s.ui_settings?.colors?.footer||'#076f45')};--preview-button:${esc2(s.ui_settings?.colors?.button||s.primary_color)}">
     <header class="settings-preview-header"><div class="settings-preview-brand"><img src="${esc2(logo)}" onerror="this.style.display='none'" alt=""><div><strong>${esc2(s.site_name)}</strong><span>${esc2(s.site_tagline)}</span></div></div></header>
-    <section class="settings-preview-hero" ${s.hero_image_url?`style="background-image:linear-gradient(rgba(0,0,0,.25),rgba(0,0,0,.25)),url('${esc2(s.hero_image_url)}')"`:''}><h1>${esc2(s.hero_title||s.site_name)}</h1><p>${esc2(s.hero_subtitle||s.address)}</p></section>
+    <section class="settings-preview-hero" ${s.hero_image_url?`style="background-image:linear-gradient(rgba(0,0,0,.25),rgba(0,0,0,.25)),url('${esc2(s.hero_image_url)}')`:''}><h1>${esc2(s.hero_title||s.site_name)}</h1><p>${esc2(s.hero_subtitle||s.address)}</p></section>
     <div class="settings-preview-body"><div class="settings-preview-card"><h3>📊 সংস্থার হিসাব</h3><p>আপনার বর্তমান হিসাবের সিস্টেম এখানে আগের মতোই থাকবে।</p><div class="settings-preview-actions"><span>প্রধান রং</span><b>${esc2(s.primary_color)}</b></div><div class="settings-preview-actions"><span>যোগাযোগ</span><b>${esc2(s.phone||s.email||'—')}</b></div></div><div class="settings-preview-card"><h3>📢 ${esc2(s.menu_notices||'নোটিশ')}</h3><p>${esc2(s.address)}</p></div></div>
-    <footer class="settings-preview-footer">© ${new Date().getFullYear()} ${esc2(s.footer_text)}<small>${esc2(s.footer_subtext)}</small></footer>
+    <footer class="settings-preview-footer" style="background:${esc2(s.ui_settings?.colors?.footer||'#076f45')}">© ${new Date().getFullYear()} ${esc2(s.footer_text)}<small>${esc2(s.footer_subtext)}</small></footer>
   </div>`;
 }
 async function openWebsiteSettingsPreview(){
@@ -512,21 +729,36 @@ async function saveWebsiteSettings(e){
     const {data:authData}=await sb.auth.getUser();row.updated_by=authData?.user?.id||null;
     const {error}=await sb.from('site_settings').upsert(row,{onConflict:'id'});
     if(error)throw error;
-    siteSettingsSaved=Object.assign({},window.AL_IKHWAN_DEFAULT_SETTINGS||{},row);siteSettingsDraft=null;
-    fillWebsiteSettingsForm(siteSettingsSaved);window.applyAlIkhwanSiteSettings(siteSettingsSaved);
+    siteSettingsSaved=Object.assign({},window.AL_IKHWAN_DEFAULT_SETTINGS||{},row);
+    siteSettingsDraft=null;
+    fillWebsiteSettingsForm(siteSettingsSaved);
+    window.applyAlIkhwanSiteSettings(siteSettingsSaved);
+    applyWebUiSettings(siteSettingsSaved.ui_settings||siteUiSettings);
     showWebsiteSettingsMsg('ওয়েবসাইট সেটিংস সফলভাবে সংরক্ষণ হয়েছে ✓',true);
   }catch(err){showWebsiteSettingsMsg('সেটিংস সংরক্ষণ করা যায়নি: '+(err?.message||'Supabase setup পরীক্ষা করুন।'),false)}
   finally{if(btn)btn.disabled=false;}
 }
 function initWebsiteSettings(){
   const f=q('websiteSettingsForm');if(!f)return;
-  f.onsubmit=saveWebsiteSettings;q('websiteSettingsPreview').onclick=openWebsiteSettingsPreview;q('websiteSettingsReset').onclick=()=>{fillWebsiteSettingsForm(siteSettingsSaved);showWebsiteSettingsMsg('আগের সংরক্ষিত সেটিংস ফিরিয়ে আনা হয়েছে।',true)};
+  ensureWebUiSettingsEditor();
+  f.onsubmit=saveWebsiteSettings;
+  q('websiteSettingsPreview').onclick=openWebsiteSettingsPreview;
+  q('websiteSettingsReset').onclick=()=>{fillWebsiteSettingsForm(siteSettingsSaved);showWebsiteSettingsMsg('আগের সংরক্ষিত সেটিংস ফিরিয়ে আনা হয়েছে।',true)};
   ['settingsLogoFile','settingsFaviconFile','settingsHeroFile'].forEach(id=>q(id)?.addEventListener('change',()=>showWebsiteSettingsMsg('ফাইলটি Preview/Save-এর সময় ব্যবহার হবে।',true)));
+  q('webUiSettingsEditor')?.addEventListener('click',e=>{
+    const btn=e.target.closest('[data-web-color]');
+    if(btn)openWebColorPalette(btn.dataset.webColor);
+  });
   loadWebsiteSettingsAdmin();
 }
-
 function openForm(name){document.querySelectorAll('.admin-form').forEach(f=>f.classList.remove('active'));const f=q(name+'Form');if(f)f.classList.add('active')}
-function openManagement(name){document.querySelectorAll('.admin-data').forEach(x=>x.classList.remove('active'));q('managementArea').style.display='block';const target=q('manage'+name.charAt(0).toUpperCase()+name.slice(1));if(target)target.classList.add('active');if(name==='payments'||name==='profits'||name==='dividendVisibility')renderAdminData()}
+function openManagement(name){
+  document.querySelectorAll('.admin-data').forEach(x=>x.classList.remove('active'));
+  q('managementArea').style.display='block';
+  const target=q('manage'+name.charAt(0).toUpperCase()+name.slice(1));
+  if(target)target.classList.add('active');
+  if(name==='payments'||name==='profits'||name==='dividendVisibility')renderAdminData();
+}
 function setMenu(open){const menu=q('mobileMenu'),overlay=q('menuOverlay'),btn=q('menuBtn');menu.classList.toggle('open',open);overlay.classList.toggle('show',open);btn.setAttribute('aria-expanded',String(open));document.body.classList.toggle('menu-open',open)}
 function openMainMenu(){setMenu(true)}
 function route(){const id=(location.hash||'#personal').slice(1);const valid=['personal','members','due','profitExpenseDetails','fund','notices','admin'];const active=valid.includes(id)?id:'personal';document.querySelectorAll('.page-section').forEach(s=>s.classList.toggle('active',s.id===active));document.querySelectorAll('#mobileMenu a[data-view]').forEach(a=>a.classList.toggle('active',a.dataset.view===active));setMenu(false)}
