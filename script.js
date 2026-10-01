@@ -449,7 +449,7 @@ async function logout(){if(memberSb)await memberSb.auth.signOut();if(sb)await sb
 const WEB_UI_DEFAULTS={
   colors:{
     primary:'#087f4e',secondary:'#0f6b4a',accent:'#f0b429',background:'#f4f8f6',
-    card:'#ffffff',text:'#17322a',header:'#087f4e',footer:'#076f45',button:'#087f4e'
+    card:'#ffffff',text:'#17322a',header:'#087f4e',footer:'#076f45',button:'#087f4e',loading:'#ffffff'
   },
   menu:[
     {id:'personal',icon:'👤',label:'সদস্যদের ব্যক্তিগত হিসাব',enabled:true},
@@ -479,6 +479,14 @@ const WEB_UI_DEFAULTS={
     {id:'websiteSettings',label:'⚙️ ওয়েবসাইট সেটিংস',enabled:true}
   ]
 };
+const WEB_MEMBER_ACCOUNT_DEFAULTS={
+  chooser:{title:'সদস্য অ্যাকাউন্ট',subtitle:'লগইন করতে বা নতুন অ্যাকাউন্ট তৈরি করতে একটি অপশন বেছে নিন।',login_button:'🔐 সদস্য লগইন',signup_button:'📝 নতুন সদস্য সাইন আপ'},
+  login:{title:'সদস্য লগইন',subtitle:'আপনার সদস্যের নাম নির্বাচন করে পাসওয়ার্ড দিয়ে লগইন করুন।',member_label:'সদস্যের নাম',member_placeholder:'-- সদস্যের নাম নির্বাচন করুন --',password_label:'পাসওয়ার্ড',password_placeholder:'পাসওয়ার্ড',submit:'🔐 সদস্য লগইন',back:'← আগের পেজে ফিরে যান',signup_link:'📝 নতুন অ্যাকাউন্ট তৈরি করুন'},
+  signup:{title:'নতুন সদস্য অ্যাকাউন্ট',subtitle:'আপনার সদস্যের নাম নির্বাচন করে ঠিকানা, মোবাইল নম্বর ও পাসওয়ার্ড দিয়ে সাইন আপ করুন। অ্যাডমিন অনুমোদনের পর হিসাব দেখা যাবে।',member_label:'সদস্যের নাম',member_placeholder:'-- সদস্যের নাম নির্বাচন করুন --',address_label:'ঠিকানা',address_placeholder:'আপনার ঠিকানা',mobile_label:'মোবাইল নম্বর',mobile_placeholder:'01XXXXXXXXX',password_label:'পাসওয়ার্ড',password_placeholder:'কমপক্ষে ৬ অক্ষর',submit:'📝 অ্যাকাউন্ট তৈরি করুন',back:'← আগের পেজে ফিরে যান',login_link:'🔐 সদস্য লগইনে যান'},
+  pending:{title:'অ্যাডমিন অনুমোদনের অপেক্ষায়',message:'আপনার অ্যাকাউন্ট তৈরি হয়েছে। অ্যাডমিন অনুমোদন করার পর আপনি আপনার ব্যক্তিগত হিসাব দেখতে পারবেন।',logout:'লগআউট'},
+  dashboard:{eyebrow:'সদস্য অ্যাকাউন্ট',logout:'লগআউট',name_label:'নাম',address_label:'ঠিকানা',mobile_label:'লগইন মোবাইল',main_member_label:'মূল সদস্য'},
+  admin:{title:'মেম্বার অনুমোদন',subtitle:'শুধু অনুমোদিত অ্যাডমিনের জন্য — এখান থেকে সদস্য অনুমোদন ও হিসাবের দৃশ্যমানতা নিয়ন্ত্রণ করা যাবে',email_label:'অ্যাডমিন ইমেইল',password_label:'পাসওয়ার্ড',login_button:'অ্যাডমিন লগইন',pending_heading:'Pending সদস্য অ্যাকাউন্ট',approve_button:'যুক্ত করুন ও অনুমোদন',reject_button:'বাতিল',pending_empty:'কোনো Pending account নেই',rule_note:'নতুন নিয়ম: সদস্য সাইন আপের সময় মূল সদস্য তালিকা থেকে নিজের নাম নির্বাচন করবে। অ্যাডমিন তথ্য যাচাই করে একই সদস্যকে অ্যাকাউন্টের সঙ্গে যুক্ত করে অনুমোদন করবেন। লগইনের সময় সদস্যের নাম ও পাসওয়ার্ড ব্যবহার হবে।',linked_heading:'🔗 যুক্ত করা সদস্য অ্যাকাউন্ট',linked_note:'🔐 কোনো সদস্য পাসওয়ার্ড ভুলে গেলে এখানে নতুন পাসওয়ার্ড সেট করতে পারবেন। অ্যাকাউন্ট ডিলেট করলে শুধু সদস্যের লগইন অ্যাকাউন্ট ও সংযোগ মুছে যাবে; মূল সদস্যের হিসাব থাকবে। পরে একই সদস্য যে কোনো মোবাইল নম্বর দিয়ে নতুন অ্যাকাউন্ট তৈরি করতে পারবেন।',reset_button:'🔑 নতুন পাসওয়ার্ড সেট',delete_button:'🗑️ অ্যাকাউন্ট ডিলেট',linked_empty:'এখনো কোনো অ্যাকাউন্ট যুক্ত করা হয়নি।'}
+};
 const WEB_COLOR_PALETTE=[
   ['Al-Ikhwan Green','#087f4e'],['Deep Green','#0f6b4a'],['Emerald','#10b981'],['Forest','#228b22'],
   ['Mint','#3eb489'],['Sage','#9caf88'],['Olive','#808000'],['Lime','#84cc16'],
@@ -500,8 +508,14 @@ const WEB_COLOR_PALETTE=[
 ];
 function webUiClone(v){
   const base=JSON.parse(JSON.stringify(WEB_UI_DEFAULTS));
+  base.member_account=JSON.parse(JSON.stringify(WEB_MEMBER_ACCOUNT_DEFAULTS));
   if(v&&typeof v==='object'){
     if(v.colors)Object.assign(base.colors,v.colors);
+    if(v.member_account&&typeof v.member_account==='object'){
+      Object.keys(WEB_MEMBER_ACCOUNT_DEFAULTS).forEach(k=>{
+        if(v.member_account[k]&&typeof v.member_account[k]==='object')Object.assign(base.member_account[k],v.member_account[k]);
+      });
+    }
     ['menu','add_options','manage_options'].forEach(k=>{
       const raw=Array.isArray(v[k])?v[k]:[];
       const map=new Map(raw.map(x=>[String(x.id),x]));
@@ -531,6 +545,7 @@ function applyWebUiSettings(ui){
   root.style.setProperty('--header-color',c.header);
   root.style.setProperty('--footer-color',c.footer);
   root.style.setProperty('--button-color',c.button);
+  root.style.setProperty('--loading-screen-bg',c.loading);
   const menuMap=new Map(siteUiSettings.menu.map(x=>[String(x.id),x]));
   document.querySelectorAll('#mobileMenu a[data-view]').forEach(a=>{
     const x=menuMap.get(String(a.dataset.view));
@@ -588,6 +603,10 @@ function ensureWebUiSettingsEditor(){
       <div id="webAddOptionsSettingsList" class="web-setting-list"></div>
       <h4 class="web-setting-subtitle">সম্পাদনার অপশন</h4>
       <div id="webManageOptionsSettingsList" class="web-setting-list"></div>
+    </div>
+    <div class="web-ui-settings-card">
+      <div class="web-ui-heading"><div><h3>👤 Member Login & Approval Settings</h3><p>নতুন সদস্য অনুমোদন এবং মেম্বার লগইন/অ্যাকাউন্ট অংশের লেখা, লেবেল ও বোতামের নাম এখান থেকে পরিবর্তন করুন। মূল Login/Approval logic অপরিবর্তিত থাকবে।</p></div></div>
+      <div id="webMemberAccountSettingsList" class="web-member-account-settings"></div>
     </div>`;
   const actions=form.querySelector('.settings-actions');
   form.insertBefore(host,actions||null);
@@ -595,7 +614,7 @@ function ensureWebUiSettingsEditor(){
 }
 function renderWebUiSettingsEditor(){
   const ui=siteUiSettings;
-  const colorLabels={primary:'প্রধান রং',secondary:'দ্বিতীয় রং',accent:'Accent রং',background:'পেজের ব্যাকগ্রাউন্ড',card:'Card রং',text:'Text রং',header:'Header রং',footer:'Footer রং',button:'Button রং'};
+  const colorLabels={primary:'প্রধান রং',secondary:'দ্বিতীয় রং',accent:'Accent রং',background:'পেজের ব্যাকগ্রাউন্ড',card:'Card রং',text:'Text রং',header:'Header রং',footer:'Footer রং',button:'Button রং',loading:'Loading Screen Background Color'};
   const cg=q('webColorSettingsGrid');
   if(cg)cg.innerHTML=Object.entries(colorLabels).map(([key,label])=>{
     const value=String(ui.colors[key]||'#ffffff').toLowerCase();
@@ -617,6 +636,14 @@ function renderWebUiSettingsEditor(){
   const ml=q('webMenuSettingsList');if(ml)ml.innerHTML=renderMenu(ui.menu,true);
   const al=q('webAddOptionsSettingsList');if(al)al.innerHTML=renderMenu(ui.add_options,false);
   const gl=q('webManageOptionsSettingsList');if(gl)gl.innerHTML=renderMenu(ui.manage_options,false);
+  const host=q('webMemberAccountSettingsList');
+  if(host){
+    const sections=[['chooser','অ্যাকাউন্ট বাছাই পেজ'],['login','সদস্য লগইন'],['signup','নতুন সদস্য অ্যাকাউন্ট'],['pending','অনুমোদনের অপেক্ষা'],['dashboard','সদস্য অ্যাকাউন্ট'],['admin','নতুন সদস্য অনুমোদন / অ্যাডমিন']];
+    host.innerHTML=sections.map(([section,title])=>{
+      const obj=ui.member_account?.[section]||{};
+      return `<div class="web-member-setting-section"><h4>${esc(title)}</h4><div class="web-member-setting-grid">${Object.entries(obj).map(([key,val])=>`<label><span>${esc(key)}</span><input type="text" data-member-setting-section="${esc(section)}" data-member-setting-key="${esc(key)}" value="${esc(val)}"></label>`).join('')}</div></div>`;
+    }).join('');
+  }
 }
 function openWebColorPalette(key){
   const current=String(siteUiSettings.colors[key]||'#ffffff').toLowerCase();
@@ -655,6 +682,11 @@ function readWebUiSettingsEditor(){
   const out=webUiClone(siteUiSettings);
   document.querySelectorAll('#webColorSettingsGrid [data-web-color-value]').forEach(i=>{
     if(validWebHex(i.value))out.colors[i.dataset.webColorValue]=i.value.toLowerCase();
+  });
+  document.querySelectorAll('#webMemberAccountSettingsList [data-member-setting-section]').forEach(i=>{
+    const section=i.dataset.memberSettingSection,key=i.dataset.memberSettingKey;
+    if(!out.member_account)out.member_account=JSON.parse(JSON.stringify(WEB_MEMBER_ACCOUNT_DEFAULTS));
+    if(out.member_account[section])out.member_account[section][key]=String(i.value??'').trim();
   });
   [['menu','webMenuSettingsList'],['add_options','webAddOptionsSettingsList'],['manage_options','webManageOptionsSettingsList']].forEach(([key,id])=>{
     document.querySelectorAll('#'+id+' .web-setting-row').forEach(r=>{

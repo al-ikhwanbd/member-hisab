@@ -20,14 +20,20 @@
   let monthlyRequired=DEFAULT_MONTHLY_REQUIRED;
   let currentDividendPublic=false;
   let currentAllMembersPublic=false;
+  const MEMBER_UI_FALLBACK={chooser:{title:'সদস্য অ্যাকাউন্ট',subtitle:'লগইন করতে বা নতুন অ্যাকাউন্ট তৈরি করতে একটি অপশন বেছে নিন।',login_button:'🔐 সদস্য লগইন',signup_button:'📝 নতুন সদস্য সাইন আপ'},login:{title:'সদস্য লগইন',subtitle:'আপনার সদস্যের নাম নির্বাচন করে পাসওয়ার্ড দিয়ে লগইন করুন।',member_label:'সদস্যের নাম',member_placeholder:'-- সদস্যের নাম নির্বাচন করুন --',password_label:'পাসওয়ার্ড',password_placeholder:'পাসওয়ার্ড',submit:'🔐 সদস্য লগইন',back:'← আগের পেজে ফিরে যান',signup_link:'📝 নতুন অ্যাকাউন্ট তৈরি করুন'},signup:{title:'নতুন সদস্য অ্যাকাউন্ট',subtitle:'আপনার সদস্যের নাম নির্বাচন করে ঠিকানা, মোবাইল নম্বর ও পাসওয়ার্ড দিয়ে সাইন আপ করুন। অ্যাডমিন অনুমোদনের পর হিসাব দেখা যাবে।',member_label:'সদস্যের নাম',member_placeholder:'-- সদস্যের নাম নির্বাচন করুন --',address_label:'ঠিকানা',address_placeholder:'আপনার ঠিকানা',mobile_label:'মোবাইল নম্বর',mobile_placeholder:'01XXXXXXXXX',password_label:'পাসওয়ার্ড',password_placeholder:'কমপক্ষে ৬ অক্ষর',submit:'📝 অ্যাকাউন্ট তৈরি করুন',back:'← আগের পেজে ফিরে যান',login_link:'🔐 সদস্য লগইনে যান'},pending:{title:'অ্যাডমিন অনুমোদনের অপেক্ষায়',message:'আপনার অ্যাকাউন্ট তৈরি হয়েছে। অ্যাডমিন অনুমোদন করার পর আপনি আপনার ব্যক্তিগত হিসাব দেখতে পারবেন।',logout:'লগআউট'},dashboard:{eyebrow:'সদস্য অ্যাকাউন্ট',logout:'লগআউট',name_label:'নাম',address_label:'ঠিকানা',mobile_label:'লগইন মোবাইল',main_member_label:'মূল সদস্য'},admin:{title:'মেম্বার অনুমোদন',subtitle:'শুধু অনুমোদিত অ্যাডমিনের জন্য — এখান থেকে সদস্য অনুমোদন ও হিসাবের দৃশ্যমানতা নিয়ন্ত্রণ করা যাবে',email_label:'অ্যাডমিন ইমেইল',password_label:'পাসওয়ার্ড',login_button:'অ্যাডমিন লগইন',pending_heading:'Pending সদস্য অ্যাকাউন্ট',approve_button:'যুক্ত করুন ও অনুমোদন',reject_button:'বাতিল',pending_empty:'কোনো Pending account নেই',rule_note:'নতুন নিয়ম: সদস্য সাইন আপের সময় মূল সদস্য তালিকা থেকে নিজের নাম নির্বাচন করবে। অ্যাডমিন তথ্য যাচাই করে একই সদস্যকে অ্যাকাউন্টের সঙ্গে যুক্ত করে অনুমোদন করবেন। লগইনের সময় সদস্যের নাম ও পাসওয়ার্ড ব্যবহার হবে।',linked_heading:'🔗 যুক্ত করা সদস্য অ্যাকাউন্ট',linked_note:'🔐 কোনো সদস্য পাসওয়ার্ড ভুলে গেলে এখানে নতুন পাসওয়ার্ড সেট করতে পারবেন। অ্যাকাউন্ট ডিলেট করলে শুধু সদস্যের লগইন অ্যাকাউন্ট ও সংযোগ মুছে যাবে; মূল সদস্যের হিসাব থাকবে। পরে একই সদস্য যে কোনো মোবাইল নম্বর দিয়ে নতুন অ্যাকাউন্ট তৈরি করতে পারবেন।',reset_button:'🔑 নতুন পাসওয়ার্ড সেট',delete_button:'🗑️ অ্যাকাউন্ট ডিলেট',linked_empty:'এখনো কোনো অ্যাকাউন্ট যুক্ত করা হয়নি।'}};
+  function memberUi(){const raw=window.AL_IKHWAN_SETTINGS?.ui_settings?.member_account||{};const out=JSON.parse(JSON.stringify(MEMBER_UI_FALLBACK));Object.keys(out).forEach(section=>{if(raw[section]&&typeof raw[section]==='object')Object.assign(out[section],raw[section]);});return out;}
+  function applyMemberAccountUi(){const u=memberUi();const text=(id,v)=>{const el=$(id);if(el)el.textContent=v;};const setLabel=(form,name,label)=>{const el=form?.elements?.[name],lab=el?.closest('label');if(lab){const b=lab.querySelector('b');lab.firstChild.textContent=label+' ';if(b&&b.parentNode!==lab)lab.appendChild(b);}};text('authTitle',u.chooser.title);text('authSubtitle',u.chooser.subtitle);text('openMemberLogin',u.chooser.login_button);text('openMemberSignup',u.chooser.signup_button);text('loginBack',u.login.back);text('loginToSignup',u.login.signup_link);text('signupBack',u.signup.back);text('signupToLogin',u.signup.login_link);text('pendingLogout',u.pending.logout);text('memberLogout',u.dashboard.logout);const lf=$('loginForm'),sf=$('signupForm'),af=$('adminLoginForm');setLabel(lf,'member_id',u.login.member_label);setLabel(lf,'password',u.login.password_label);setLabel(sf,'member_id',u.signup.member_label);setLabel(sf,'address',u.signup.address_label);setLabel(sf,'mobile',u.signup.mobile_label);setLabel(sf,'password',u.signup.password_label);if(lf){const sel=lf.elements.member_id;if(sel?.options?.[0])sel.options[0].textContent=u.login.member_placeholder;if(lf.elements.password)lf.elements.password.placeholder=u.login.password_placeholder;const b=lf.querySelector('button[type="submit"]');if(b)b.textContent=u.login.submit;}if(sf){const sel=sf.elements.member_id;if(sel?.options?.[0])sel.options[0].textContent=u.signup.member_placeholder;if(sf.elements.address)sf.elements.address.placeholder=u.signup.address_placeholder;if(sf.elements.mobile)sf.elements.mobile.placeholder=u.signup.mobile_placeholder;if(sf.elements.password)sf.elements.password.placeholder=u.signup.password_placeholder;const b=sf.querySelector('button[type="submit"]');if(b)b.textContent=u.signup.submit;}if(af){setLabel(af,'email',u.admin.email_label);setLabel(af,'password',u.admin.password_label);const b=af.querySelector('button[type="submit"]');if(b)b.textContent=u.admin.login_button;}const at=document.querySelector('#adminPanel .section-title h2'),as=document.querySelector('#adminPanel .section-title p');if(at)at.textContent=u.admin.title;if(as)as.textContent=u.admin.subtitle;const pt=document.querySelector('#pendingCard h2'),pm=document.querySelector('#pendingCard p');if(pt)pt.textContent=u.pending.title;if(pm)pm.textContent=u.pending.message;const de=document.querySelector('#dashboard .eyebrow');if(de)de.textContent=u.dashboard.eyebrow;}
 
   function msg(text,ok=false,id='authMsg'){const el=$(id);if(!el)return;el.textContent=text;el.className='message '+(ok?'success':'error');}
   function showChooser(){
     $('memberAuthChooser').hidden=false;
     $('loginPanel').hidden=true;
     $('signupPanel').hidden=true;
-    $('authTitle').textContent='সদস্য অ্যাকাউন্ট';
-    $('authSubtitle').textContent='লগইন করতে বা নতুন অ্যাকাউন্ট তৈরি করতে একটি অপশন বেছে নিন।';
+    const u=memberUi();
+    $('authTitle').textContent=u.chooser.title;
+    $('authSubtitle').textContent=u.chooser.subtitle;
+    $('openMemberLogin').textContent=u.chooser.login_button;
+    $('openMemberSignup').textContent=u.chooser.signup_button;
     $('authMsg').textContent='';
   }
   function openAuthPanel(mode){
@@ -35,8 +41,10 @@
     $('memberAuthChooser').hidden=true;
     $('loginPanel').hidden=signup;
     $('signupPanel').hidden=!signup;
-    $('authTitle').textContent=signup?'নতুন সদস্য অ্যাকাউন্ট':'সদস্য লগইন';
-    $('authSubtitle').textContent=signup?'আপনার সদস্যের নাম নির্বাচন করে ঠিকানা, মোবাইল নম্বর ও পাসওয়ার্ড দিয়ে সাইন আপ করুন। অ্যাডমিন অনুমোদনের পর হিসাব দেখা যাবে.':'আপনার সদস্যের নাম নির্বাচন করে পাসওয়ার্ড দিয়ে লগইন করুন।';
+    const u=memberUi();
+    $('authTitle').textContent=signup?u.signup.title:u.login.title;
+    $('authSubtitle').textContent=signup?u.signup.subtitle:u.login.subtitle;
+    applyMemberAccountUi();
     $('authMsg').textContent='';
   }
 
@@ -179,8 +187,9 @@ function findMemberById(id){return mainData.members.find(m=>String(m.id)===Strin
       if(!currentMainMember) throw new Error('অ্যাডমিন যে সদস্যের সঙ্গে অ্যাকাউন্ট যুক্ত করেছেন, সেই সদস্যটি মূল তালিকায় পাওয়া যায়নি।');
     }catch(err){msg(err.message||'হিসাব লোড করা যায়নি।');showOnly('auth');return}
     showOnly('dashboard');
+    const u=memberUi();
     $('memberName').textContent=currentProfile.full_name;$('memberMobile').textContent=currentProfile.mobile||'—';
-    $('memberProfile').innerHTML=`<div class="profile-item"><span>নাম</span><strong>${esc(currentProfile.full_name)}</strong></div><div class="profile-item"><span>ঠিকানা</span><strong>${esc(currentProfile.address)}</strong></div><div class="profile-item"><span>লগইন মোবাইল</span><strong>${esc(currentProfile.mobile)}</strong></div><div class="profile-item"><span>মূল সদস্য</span><strong>${esc(currentMainMember.name)}</strong></div>`;
+    $('memberProfile').innerHTML=`<div class="profile-item"><span>${esc(u.dashboard.name_label)}</span><strong>${esc(currentProfile.full_name)}</strong></div><div class="profile-item"><span>${esc(u.dashboard.address_label)}</span><strong>${esc(currentProfile.address)}</strong></div><div class="profile-item"><span>${esc(u.dashboard.mobile_label)}</span><strong>${esc(currentProfile.mobile)}</strong></div><div class="profile-item"><span>${esc(u.dashboard.main_member_label)}</span><strong>${esc(currentMainMember.name)}</strong></div>`;
     await loadDashboard();
   }
   async function getVisibility(){const {data,error}=await sb.from('member_visibility_settings').select('all_members_public').eq('id',true).maybeSingle();if(error)return false;return !!data?.all_members_public;}
@@ -455,12 +464,13 @@ function findMemberById(id){return mainData.members.find(m=>String(m.id)===Strin
     if(me){msg(me.message,false,'adminMsg');return}
     const {data:pending,error}=await sb.from('member_profiles').select('id,full_name,address,mobile,created_at,status').eq('status','pending').order('created_at',{ascending:true});
     if(error){msg(error.message,false,'adminMsg');return}
+    const u=memberUi();
     let rows='';
     for(const x of (pending||[])){
       const options=(membersList||[]).map((m,i)=>`<option value="${esc(m.id)}">${Number(m.serial_no||i+1).toLocaleString('bn-BD')}. ${esc(m.name)}${m.mobile?' — '+esc(m.mobile):''}</option>`).join('');
-      rows+=`<tr><td>${esc(x.full_name)}</td><td>${esc(x.address)}</td><td>${esc(x.mobile||'')}</td><td><select id="link_${esc(x.id)}"><option value="">-- সদস্যের নাম নির্বাচন করুন --</option>${options}</select></td><td>${new Date(x.created_at).toLocaleDateString('bn-BD')}</td><td><button class="small-btn approve" onclick="window.memberApprove('${x.id}')">যুক্ত করুন ও অনুমোদন</button> <button class="small-btn reject" onclick="window.memberReject('${x.id}')">বাতিল</button></td></tr>`;
+      rows+=`<tr><td>${esc(x.full_name)}</td><td>${esc(x.address)}</td><td>${esc(x.mobile||'')}</td><td><select id="link_${esc(x.id)}"><option value="">-- সদস্যের নাম নির্বাচন করুন --</option>${options}</select></td><td>${new Date(x.created_at).toLocaleDateString('bn-BD')}</td><td><button class="small-btn approve" onclick="window.memberApprove('${x.id}')">${esc(u.admin.approve_button)}</button> <button class="small-btn reject" onclick="window.memberReject('${x.id}')">${esc(u.admin.reject_button)}</button></td></tr>`;
     }
-    box.innerHTML=controls+`<div class="admin-link-box"><b>নতুন নিয়ম:</b> সদস্য সাইন আপের সময় মূল সদস্য তালিকা থেকে নিজের নাম নির্বাচন করবে। অ্যাডমিন তথ্য যাচাই করে একই সদস্যকে অ্যাকাউন্টের সঙ্গে যুক্ত করে অনুমোদন করবেন। লগইনের সময় সদস্যের নাম ও পাসওয়ার্ড ব্যবহার হবে।</div><table><thead><tr><th>সাইন আপ নাম</th><th>ঠিকানা</th><th>লগইন তথ্য</th><th>মূল সদস্য</th><th>তারিখ</th><th>অ্যাকশন</th></tr></thead><tbody>${rows||'<tr><td colspan="6">কোনো Pending account নেই</td></tr>'}</tbody></table>`;
+    box.innerHTML=controls+`<h3>${esc(u.admin.pending_heading)}</h3><div class="admin-link-box"><b>নির্দেশনা:</b> ${esc(u.admin.rule_note)}</div><table><thead><tr><th>সাইন আপ নাম</th><th>ঠিকানা</th><th>লগইন তথ্য</th><th>মূল সদস্য</th><th>তারিখ</th><th>অ্যাকশন</th></tr></thead><tbody>${rows||`<tr><td colspan="6">${esc(u.admin.pending_empty)}</td></tr>`}</tbody></table>`;
     await loadLinkedMembers(membersList||[]);
   }
   async function loadLinkedMembers(membersList=[]){
@@ -470,8 +480,9 @@ function findMemberById(id){return mainData.members.find(m=>String(m.id)===Strin
     const profiles={};
     const ids=(links||[]).map(x=>x.member_user_id);
     if(ids.length){const {data:ps}=await sb.from('member_profiles').select('id,full_name,mobile,status').in('id',ids);(ps||[]).forEach(x=>profiles[x.id]=x);}
-    const rows=(links||[]).map((l,i)=>{const p=profiles[l.member_user_id]||{};const m=(membersList||[]).find(x=>String(x.id)===String(l.main_member_id))||{};return `<tr><td>${i+1}</td><td>${esc(p.full_name||'')}</td><td>${esc(p.mobile||'')}</td><td>${esc(m.name||'')}</td><td>${p.status==='approved'?'অনুমোদিত':esc(p.status||'')}</td><td><button class="small-btn approve" type="button" onclick="window.memberResetPassword('${esc(l.member_user_id)}','${esc(p.full_name||'সদস্য')}')">🔑 নতুন পাসওয়ার্ড সেট</button> <button class="small-btn reject" type="button" onclick="window.memberDeleteAccount('${esc(l.member_user_id)}','${esc(l.main_member_id)}','${esc(p.full_name||m.name||'সদস্য')}')">🗑️ অ্যাকাউন্ট ডিলেট</button></td></tr>`}).join('');
-    box.innerHTML=`<h3>🔗 যুক্ত করা সদস্য অ্যাকাউন্ট</h3><div class="admin-link-box">🔐 কোনো সদস্য পাসওয়ার্ড ভুলে গেলে এখানে নতুন পাসওয়ার্ড সেট করতে পারবেন। অ্যাকাউন্ট ডিলেট করলে শুধু সদস্যের লগইন অ্যাকাউন্ট ও সংযোগ মুছে যাবে; মূল সদস্যের হিসাব থাকবে। পরে একই সদস্য যে কোনো মোবাইল নম্বর দিয়ে নতুন অ্যাকাউন্ট তৈরি করতে পারবেন।</div><table><thead><tr><th>ক্রম</th><th>অ্যাকাউন্ট নাম</th><th>লগইন তথ্য</th><th>মূল সদস্য</th><th>অবস্থা</th><th>অ্যাকশন</th></tr></thead><tbody>${rows||'<tr><td colspan="6">এখনো কোনো অ্যাকাউন্ট যুক্ত করা হয়নি।</td></tr>'}</tbody></table>`;
+    const u=memberUi();
+    const rows=(links||[]).map((l,i)=>{const p=profiles[l.member_user_id]||{};const m=(membersList||[]).find(x=>String(x.id)===String(l.main_member_id))||{};return `<tr><td>${i+1}</td><td>${esc(p.full_name||'')}</td><td>${esc(p.mobile||'')}</td><td>${esc(m.name||'')}</td><td>${p.status==='approved'?'অনুমোদিত':esc(p.status||'')}</td><td><button class="small-btn approve" type="button" onclick="window.memberResetPassword('${esc(l.member_user_id)}','${esc(p.full_name||'সদস্য')}')">${esc(u.admin.reset_button)}</button> <button class="small-btn reject" type="button" onclick="window.memberDeleteAccount('${esc(l.member_user_id)}','${esc(l.main_member_id)}','${esc(p.full_name||m.name||'সদস্য')}')">${esc(u.admin.delete_button)}</button></td></tr>`}).join('');
+    box.innerHTML=`<h3>${esc(u.admin.linked_heading)}</h3><div class="admin-link-box">${esc(u.admin.linked_note)}</div><table><thead><tr><th>ক্রম</th><th>অ্যাকাউন্ট নাম</th><th>লগইন তথ্য</th><th>মূল সদস্য</th><th>অবস্থা</th><th>অ্যাকশন</th></tr></thead><tbody>${rows||`<tr><td colspan="6">${esc(u.admin.linked_empty)}</td></tr>`}</tbody></table>`;
   }
   async function setStatus(id,status){
     if(status==='approved'){
@@ -544,6 +555,8 @@ function findMemberById(id){return mainData.members.find(m=>String(m.id)===Strin
   window.memberApprove=id=>setStatus(id,'approved');window.memberReject=id=>setStatus(id,'rejected');
   window.memberResetPassword=adminResetMemberPassword;
   window.memberDeleteAccount=adminDeleteMemberAccount;
+  window.addEventListener('site-settings-applied',()=>applyMemberAccountUi());
+  if(window.AL_IKHWAN_SETTINGS)applyMemberAccountUi();
   $('memberMenuBtn').onclick=()=>setMemberMenu(true);
   $('memberMenuClose').onclick=()=>setMemberMenu(false);
   $('memberMenuOverlay').onclick=()=>setMemberMenu(false);

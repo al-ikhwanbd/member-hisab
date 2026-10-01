@@ -18,7 +18,7 @@
     meta_description:'আল ইখওয়ান ইসলামী সংস্থা বাংলাদেশের হিসাব দেখুন'
   };
   const DEFAULT_UI_SETTINGS={
-    colors:{header:DEFAULTS.primary_color,footer:'#076f45',button:DEFAULTS.primary_color},
+    colors:{header:DEFAULTS.primary_color,footer:'#076f45',button:DEFAULTS.primary_color,loading:'#ffffff'},
     menu:[
       {id:'personal',icon:'👤',label:DEFAULTS.menu_personal,enabled:true},
       {id:'members',icon:'👥',label:DEFAULTS.menu_members,enabled:true},
@@ -46,6 +46,14 @@
       {id:'notices',label:'নোটিশ ব্যবস্থাপনা',enabled:true},
       {id:'websiteSettings',label:'⚙️ ওয়েবসাইট সেটিংস',enabled:true}
     ]
+    ,member_account:{
+      chooser:{title:'সদস্য অ্যাকাউন্ট',subtitle:'লগইন করতে বা নতুন অ্যাকাউন্ট তৈরি করতে একটি অপশন বেছে নিন।',login_button:'🔐 সদস্য লগইন',signup_button:'📝 নতুন সদস্য সাইন আপ'},
+      login:{title:'সদস্য লগইন',subtitle:'আপনার সদস্যের নাম নির্বাচন করে পাসওয়ার্ড দিয়ে লগইন করুন।',member_label:'সদস্যের নাম',member_placeholder:'-- সদস্যের নাম নির্বাচন করুন --',password_label:'পাসওয়ার্ড',password_placeholder:'পাসওয়ার্ড',submit:'🔐 সদস্য লগইন',back:'← আগের পেজে ফিরে যান',signup_link:'📝 নতুন অ্যাকাউন্ট তৈরি করুন'},
+      signup:{title:'নতুন সদস্য অ্যাকাউন্ট',subtitle:'আপনার সদস্যের নাম নির্বাচন করে ঠিকানা, মোবাইল নম্বর ও পাসওয়ার্ড দিয়ে সাইন আপ করুন। অ্যাডমিন অনুমোদনের পর হিসাব দেখা যাবে।',member_label:'সদস্যের নাম',member_placeholder:'-- সদস্যের নাম নির্বাচন করুন --',address_label:'ঠিকানা',address_placeholder:'আপনার ঠিকানা',mobile_label:'মোবাইল নম্বর',mobile_placeholder:'01XXXXXXXXX',password_label:'পাসওয়ার্ড',password_placeholder:'কমপক্ষে ৬ অক্ষর',submit:'📝 অ্যাকাউন্ট তৈরি করুন',back:'← আগের পেজে ফিরে যান',login_link:'🔐 সদস্য লগইনে যান'},
+      pending:{title:'অ্যাডমিন অনুমোদনের অপেক্ষায়',message:'আপনার অ্যাকাউন্ট তৈরি হয়েছে। অ্যাডমিন অনুমোদন করার পর আপনি আপনার ব্যক্তিগত হিসাব দেখতে পারবেন।',logout:'লগআউট'},
+      dashboard:{eyebrow:'সদস্য অ্যাকাউন্ট',logout:'লগআউট',name_label:'নাম',address_label:'ঠিকানা',mobile_label:'লগইন মোবাইল',main_member_label:'মূল সদস্য'},
+      admin:{title:'মেম্বার অনুমোদন',subtitle:'শুধু অনুমোদিত অ্যাডমিনের জন্য — এখান থেকে সদস্য অনুমোদন ও হিসাবের দৃশ্যমানতা নিয়ন্ত্রণ করা যাবে',email_label:'অ্যাডমিন ইমেইল',password_label:'পাসওয়ার্ড',login_button:'অ্যাডমিন লগইন',pending_heading:'Pending সদস্য অ্যাকাউন্ট',approve_button:'যুক্ত করুন ও অনুমোদন',reject_button:'বাতিল',pending_empty:'কোনো Pending account নেই',rule_note:'নতুন নিয়ম: সদস্য সাইন আপের সময় মূল সদস্য তালিকা থেকে নিজের নাম নির্বাচন করবে। অ্যাডমিন তথ্য যাচাই করে একই সদস্যকে অ্যাকাউন্টের সঙ্গে যুক্ত করে অনুমোদন করবেন। লগইনের সময় সদস্যের নাম ও পাসওয়ার্ড ব্যবহার হবে।',linked_heading:'🔗 যুক্ত করা সদস্য অ্যাকাউন্ট',linked_note:'🔐 কোনো সদস্য পাসওয়ার্ড ভুলে গেলে এখানে নতুন পাসওয়ার্ড সেট করতে পারবেন। অ্যাকাউন্ট ডিলেট করলে শুধু সদস্যের লগইন অ্যাকাউন্ট ও সংযোগ মুছে যাবে; মূল সদস্যের হিসাব থাকবে। পরে একই সদস্য যে কোনো মোবাইল নম্বর দিয়ে নতুন অ্যাকাউন্ট তৈরি করতে পারবেন।',reset_button:'🔑 নতুন পাসওয়ার্ড সেট',delete_button:'🗑️ অ্যাকাউন্ট ডিলেট',linked_empty:'এখনো কোনো অ্যাকাউন্ট যুক্ত করা হয়নি।'}
+    }
   };
   window.AL_IKHWAN_DEFAULT_UI_SETTINGS=DEFAULT_UI_SETTINGS;
   window.AL_IKHWAN_DEFAULT_SETTINGS=DEFAULTS;
@@ -80,6 +88,7 @@
     root.style.setProperty('--header-color',ui.colors.header||s.primary_color);
     root.style.setProperty('--footer-color',ui.colors.footer||'#076f45');
     root.style.setProperty('--button-color',ui.colors.button||s.primary_color);
+    root.style.setProperty('--loading-screen-bg',ui.colors.loading||'#ffffff');
     root.style.setProperty('--green',s.primary_color);
     root.style.setProperty('--green-dark',s.secondary_color);
     root.style.setProperty('--green-soft',s.background_color);
@@ -126,6 +135,8 @@
     if(s.hero_image_url){document.querySelectorAll('.hero').forEach(h=>h.style.backgroundImage=`linear-gradient(rgba(0,0,0,.22),rgba(0,0,0,.22)),url("${s.hero_image_url.replace(/"/g,'%22')}")`);}
     else document.querySelectorAll('.hero').forEach(h=>h.style.backgroundImage='');
     document.title=s.site_name+' — হিসাব';
+    const splash=document.getElementById('appLoadingScreen');
+    if(splash){splash.classList.add('app-loading-hide');setTimeout(()=>splash.remove(),350);}
     window.dispatchEvent(new CustomEvent('site-settings-applied',{detail:s}));
   }
   async function load(){
