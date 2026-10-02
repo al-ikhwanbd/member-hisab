@@ -152,8 +152,6 @@
     if(s.hero_image_url){document.querySelectorAll('.hero').forEach(h=>h.style.backgroundImage=`linear-gradient(rgba(0,0,0,.22),rgba(0,0,0,.22)),url("${s.hero_image_url.replace(/"/g,'%22')}")`);}
     else document.querySelectorAll('.hero').forEach(h=>h.style.backgroundImage='');
     document.title=s.site_name+' — হিসাব';
-    const splash=document.getElementById('appLoadingScreen');
-    if(splash){splash.classList.add('app-loading-hide');setTimeout(()=>splash.remove(),350);}
     window.dispatchEvent(new CustomEvent('site-settings-applied',{detail:s}));
   }
   async function load(){

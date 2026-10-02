@@ -3,11 +3,6 @@
 html{scroll-behavior:smooth}
 body{margin:0;font-family:Arial,"Noto Sans Bengali","SolaimanLipi",sans-serif;background:#f4f8f6;color:var(--text);line-height:1.55}
 body.menu-open{overflow:hidden}
-.app-loading-screen{position:fixed;inset:0;z-index:99999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;background:var(--loading-screen-bg,#fff);transition:opacity .3s ease,visibility .3s ease}
-.app-loading-screen img{width:96px;height:96px;border-radius:50%;object-fit:contain;background:#fff;padding:4px;box-shadow:0 4px 18px rgba(0,0,0,.12)}
-.app-loading-spinner{width:28px;height:28px;border:3px solid rgba(0,0,0,.12);border-top-color:var(--primary-color,var(--green));border-radius:50%;animation:appLoadingSpin .8s linear infinite}
-.app-loading-hide{opacity:0;visibility:hidden}
-@keyframes appLoadingSpin{to{transform:rotate(360deg)}}
 
 .container{width:min(100% - 24px,940px);margin:auto}
 .top-header{background:var(--header-color,var(--green));color:#fff;box-shadow:0 3px 16px rgba(0,0,0,.14)}
