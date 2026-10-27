@@ -280,7 +280,7 @@ footer{background:var(--footer-color,#076f45);color:#fff;text-align:center;paddi
 @media(max-width:800px){.settings-grid,.settings-preview-body{grid-template-columns:1fr}.settings-color-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.settings-preview-hero h1{font-size:24px}}
 @media(max-width:520px){.settings-color-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.website-settings-card{padding:14px}.settings-actions .btn{width:100%}}
 
-body{background:var(--site-bg);color:var(--text-color)} .top-header{background:var(--primary-color)} .hero{background-color:var(--secondary-color)} .btn-primary{background:var(--primary-color);border-color:var(--primary-color)} .admin-badge{background:var(--primary-color)} .section-title .title-icon{color:var(--primary-color)}
+body{background:var(--site-bg);color:var(--text-color)} .top-header{background:var(--header-color,var(--primary-color))} .hero{background-color:var(--secondary-color)} .btn-primary{background:var(--primary-color);border-color:var(--primary-color)} .admin-badge{background:var(--primary-color)} .section-title .title-icon{color:var(--primary-color)}
 
 .footer-contact{font-size:13px;margin-top:6px;opacity:.92;word-break:break-word}
 
