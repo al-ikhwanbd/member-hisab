@@ -340,3 +340,13 @@ body{background:var(--site-bg);color:var(--text-color)} .top-header{background:v
   .web-color-open{grid-template-columns:34px 1fr auto}
   .web-color-open>span:last-child{font-size:10px}
 }
+
+/* Organization total summary: keep the same two-column layout on phones and computers. */
+.summary-grid.total-summary{grid-template-columns:repeat(2,minmax(0,1fr));}
+.summary-grid.total-summary article{min-width:0;overflow-wrap:anywhere;}
+.summary-grid.total-summary article strong{font-size:clamp(15px,2.6vw,22px);}
+
+/* Member personal account: keep all-years summary cards in two columns on every screen size. */
+.summary-grid.personal-total-summary{grid-template-columns:repeat(2,minmax(0,1fr));}
+.summary-grid.personal-total-summary article{min-width:0;overflow-wrap:anywhere;}
+.summary-grid.personal-total-summary article strong{font-size:clamp(15px,2.6vw,22px);}
