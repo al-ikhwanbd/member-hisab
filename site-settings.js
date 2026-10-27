@@ -18,7 +18,7 @@
     meta_description:'আল ইখওয়ান ইসলামী সংস্থা বাংলাদেশের হিসাব দেখুন'
   };
   const DEFAULT_UI_SETTINGS={
-    colors:{header:DEFAULTS.primary_color,footer:'#076f45',button:DEFAULTS.primary_color,loading:'#ffffff'},
+    colors:{header:DEFAULTS.primary_color,statusBar:DEFAULTS.primary_color,footer:'#076f45',button:DEFAULTS.primary_color,loading:'#ffffff'},
     menu:[
       {id:'personal',icon:'👤',label:DEFAULTS.menu_personal,enabled:true},
       {id:'members',icon:'👥',label:DEFAULTS.menu_members,enabled:true},
@@ -90,6 +90,8 @@
     root.style.setProperty('--card-bg',s.card_color);
     root.style.setProperty('--text-color',s.text_color);
     root.style.setProperty('--header-color',ui.colors.header||s.primary_color);
+    const themeColorMeta=document.querySelector('meta[name="theme-color"]');
+    if(themeColorMeta)themeColorMeta.setAttribute('content',ui.colors.statusBar||DEFAULTS.primary_color);
     root.style.setProperty('--footer-color',ui.colors.footer||'#076f45');
     root.style.setProperty('--button-color',ui.colors.button||s.primary_color);
     root.style.setProperty('--loading-screen-bg',ui.colors.loading||'#ffffff');

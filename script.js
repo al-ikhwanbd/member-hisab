@@ -449,7 +449,7 @@ async function logout(){if(memberSb)await memberSb.auth.signOut();if(sb)await sb
 const WEB_UI_DEFAULTS={
   colors:{
     primary:'#087f4e',secondary:'#0f6b4a',accent:'#f0b429',background:'#f4f8f6',
-    card:'#ffffff',text:'#17322a',header:'#087f4e',footer:'#076f45',button:'#087f4e',loading:'#ffffff'
+    card:'#ffffff',text:'#17322a',header:'#087f4e',statusBar:'#087f4e',footer:'#076f45',button:'#087f4e',loading:'#ffffff'
   },
   menu:[
     {id:'personal',icon:'👤',label:'সদস্যদের ব্যক্তিগত হিসাব',enabled:true},
@@ -633,7 +633,7 @@ function ensureWebUiSettingsEditor(){
 }
 function renderWebUiSettingsEditor(){
   const ui=siteUiSettings;
-  const colorLabels={primary:'প্রধান রং',secondary:'দ্বিতীয় রং',accent:'Accent রং',background:'পেজের ব্যাকগ্রাউন্ড',card:'Card রং',text:'Text রং',header:'Header রং',footer:'Footer রং',button:'Button রং',loading:'Loading Screen Background Color'};
+  const colorLabels={primary:'প্রধান রং',secondary:'দ্বিতীয় রং',accent:'Accent রং',background:'পেজের ব্যাকগ্রাউন্ড',card:'Card রং',text:'Text রং',header:'Header রং',statusBar:'Status Bar রং (মোবাইলের সময়/ব্যাটারি অংশ)',footer:'Footer রং',button:'Button রং',loading:'Loading Screen Background Color'};
   const cg=q('webColorSettingsGrid');
   if(cg)cg.innerHTML=Object.entries(colorLabels).map(([key,label])=>{
     const value=String(ui.colors[key]||'#ffffff').toLowerCase();
